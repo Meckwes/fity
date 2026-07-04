@@ -1,0 +1,18 @@
+Error: supabaseUrl is required.
+    at C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\app\api\lead\route.js:24:57135
+    at new r9 (C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\app\api\lead\route.js:24:57386)
+    at 9594 (C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\app\api\lead\route.js:24:62092)
+    at t (C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\webpack-runtime.js:1:127)
+    at r (C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\app\api\lead\route.js:35:15440)
+    at C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\app\api\lead\route.js:35:15467
+    at t.X (C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\webpack-runtime.js:1:1191)
+    at C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\app\api\lead\route.js:35:15453
+    at Object.<anonymous> (C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\.next\server\app\api\lead\route.js:35:15494)
+    at Module._compile (node:internal/modules/cjs/loader:1830:14)
+
+> Build error occurred
+Error: Failed to collect page data for /api/lead
+    at C:\Users\WESLEY RODRIGUES\.minimax\sessions\mvs_3a1df85f701d4a9a981dd9eddcf09350\workspace\fity-app\node_modules\next\dist\build\utils.js:1268:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  type: 'Error'
+}

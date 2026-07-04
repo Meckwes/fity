@@ -1,0 +1,32 @@
+﻿
+> fity@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.13
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/5) ...
+   Generating static pages (1/5) 
+   Generating static pages (2/5) 
+   Generating static pages (3/5) 
+ Ô£ô Generating static pages (5/5)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Ôöî Ôùï /                                    8.94 kB          96 kB
+Ôö£ Ôùï /_not-found                          871 B            88 kB
+Ôöö ãÆ /api/lead                            0 B                0 B
++ First Load JS shared by all            87.1 kB
+  Ôö£ chunks/23-e6d1585ba3be299e.js        31.6 kB
+  Ôö£ chunks/fd9d1056-8042ad09b3c311e2.js  53.6 kB
+  Ôöö other shared chunks (total)          1.86 kB
+
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+
