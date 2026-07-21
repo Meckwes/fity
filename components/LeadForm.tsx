@@ -2,6 +2,13 @@
 import { useState } from "react";
 import { MessageCircle, ArrowRight, Loader2, Check } from "lucide-react";
 
+const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5511999999999";
+const WA_MSG = encodeURIComponent(
+  process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
+    "Olá! Quero testar o Fity AI por 7 dias grátis."
+);
+const WA_LINK = `https://wa.me/${WHATSAPP}?text=${WA_MSG}`;
+
 export default function LeadForm() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -26,11 +33,22 @@ export default function LeadForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Falha ao enviar");
+
+      // Tenta ler a mensagem específica do servidor
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // Mostra a mensagem real do backend em vez de genérica
+        setError(data.error || `Erro ${res.status}: ${res.statusText}`);
+        return;
+      }
+
       setDone(true);
       (e.target as HTMLFormElement).reset();
     } catch (err) {
-      setError("Algo deu errado. Tenta de novo ou fala comigo no Zap.");
+      // Erro de rede (sem internet, servidor caiu, etc)
+      console.error("Submit error:", err);
+      setError("Não consegui conectar. Verifica tua internet e tenta de novo.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +84,7 @@ export default function LeadForm() {
           Amanhã 7h seu briefing já tá no Zap.
         </h2>
         <p className="text-white/90 max-w-xl mx-auto mb-10">
-          Deixa teu contato que eu te mando o link do WhatsApp pra começar.
+          Deixa teu contato que eu te mando o link do WhatsApp para começar.
           <br className="hidden sm:block" />
           7 dias grátis, sem cartão, sem letra miúda.
         </p>
@@ -129,14 +147,14 @@ export default function LeadForm() {
             <p className="mt-3 text-sm text-red-600">{error}</p>
           )}
           <p className="text-xs text-ink-500 mt-4">
-            🔒 Seus dados não vão pra ninguém. Sem spam, sem grupo, sem promoção.
+            🔒 Seus dados não vão para ninguém. Sem spam, sem grupo, sem promoção.
           </p>
         </form>
 
         <p className="mt-6 text-sm text-white/80">
           Ou fala comigo direto agora:{" "}
           <a
-            href="https://wa.me/5511999999999"
+            href={WA_LINK}
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-4 hover:no-underline font-semibold"

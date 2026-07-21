@@ -32,3 +32,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+
+# ---- LIXO DE DEV/TESTE (NAO SUBIR) ----
+test.json
+build-check.log
+build.err
+build.log
+dev.err
+dev.log
+dev.out
+preview-*.png
+screenshot.cjs

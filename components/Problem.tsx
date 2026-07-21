@@ -10,7 +10,7 @@ const pains = [
   {
     icon: Clock,
     title: "Sem tempo de pensar",
-    body: "Toda manhã você precisa decidir o que comer, quanto, e o que treinar. Quem trabalha 8h+ e tem família não tem banda cognitiva pra decidir mais isso.",
+    body: "Toda manhã você precisa decidir o que comer, quanto, e o que treinar. Quem trabalha 8h+ e tem família não tem banda cognitiva para decidir mais isso.",
   },
   {
     icon: DollarSign,

@@ -1,12 +1,16 @@
 "use client";
-import { ArrowRight, MessageCircle, Star } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 
 const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5511999999999";
 const MSG = encodeURIComponent(
   process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
-    "Oi! Quero testar o Fity por 7 dias gratis."
+    "Olá! Quero testar o Fity AI por 7 dias grátis."
 );
 const WA_LINK = `https://wa.me/${WHATSAPP}?text=${MSG}`;
+
+// CTA principal: leva pro LeadForm (7 dias grátis, sem cartão)
+// NUNCA leva direto pro checkout — checkout é só pra quem quer pagar agora
+const TRIAL_LINK = "#comecar";
 
 export default function Hero() {
   return (
@@ -45,26 +49,29 @@ export default function Hero() {
 
             <p className="mt-6 text-lg sm:text-xl text-ink-500 max-w-xl mx-auto lg:mx-0">
               Você recebe no WhatsApp o plano alimentar do dia, o treino de 35min,
-              e a lista de compras da semana. Personalizado pra você, em português.
+              e a lista de compras da semana. Personalizado para você, em português.
               Por <strong className="text-ink-900">R$ 29/mês</strong>.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <a
-                href={WA_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary text-base"
-              >
-                <MessageCircle size={20} /> Testar 7 dias grátis
+              <a href={TRIAL_LINK} className="btn-primary text-base">
+                Testar 7 dias grátis
+                <ArrowRight size={18} />
               </a>
               <a href="#como-funciona" className="btn-secondary text-base">
-                Como funciona <ArrowRight size={18} />
+                Como funciona
               </a>
             </div>
 
             <p className="mt-4 text-sm text-ink-500">
-              ✓ Sem cartão · ✓ Cancela quando quiser · ✓ Setup em 5 minutos
+              ✓ Sem cartão · ✓ Sem compromisso · ✓ Setup em 5 minutos ·
+              já quer pagar?{" "}
+              <a
+                href="#precos"
+                className="underline underline-offset-4 hover:text-ink-700 font-semibold"
+              >
+                ver planos
+              </a>
             </p>
           </div>
 

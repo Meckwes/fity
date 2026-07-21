@@ -12,13 +12,13 @@ const steps = [
     n: "02",
     icon: Sparkles,
     title: "A IA monta seu plano",
-    body: "A IA gera um plano alimentar + treino personalizado pra você, usando comida brasileira e equipamento que você tem.",
+    body: "A IA gera um plano alimentar + treino personalizado para você, usando comida brasileira e equipamento que você tem.",
   },
   {
     n: "03",
     icon: ListChecks,
     title: "Você recebe todo dia",
-    body: "Briefing às 7h no Zap. Lista de compras todo sábado. Substitui, ajusta, adapta — sem você pensar em nada.",
+    body: "Briefing às 7h no WhatsApp. Lista de compras todo sábado. Substitui, ajusta, adapta — sem você pensar em nada.",
   },
 ];
 

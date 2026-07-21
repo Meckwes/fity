@@ -95,7 +95,7 @@ export default function SampleBriefing() {
               </ul>
               <div className="mt-5 pt-4 border-t border-orange-200">
                 <p className="text-xs text-ink-500">
-                  💡 Tá sem bateria mental pra montar? Clica pra enviar pra{" "}
+                  💡 Tá sem bateria mental para montar? Clica para enviar para{" "}
                   <strong className="text-orange-600">iFood Compras</strong> ou{" "}
                   <strong className="text-orange-600">Zé Delivery</strong>.
                 </p>

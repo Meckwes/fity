@@ -9,10 +9,10 @@ const faqs = [
   },
   {
     q: "Funciona se eu nunca treinei?",
-    a: "Sim. O Fity adapta o treino ao seu equipamento e nível. Se você nunca treinou, começo com séries leves de 30min. Se já é avançado, vai pra hipertrofia pesada.",
+    a: "Sim. O Fity adapta o treino ao seu equipamento e nível. Se você nunca treinou, começo com séries leves de 30min. Se já é avançado, vai para hipertrofia pesada.",
   },
   {
-    q: "Tem pra dieta específica (vegano, sem glúten, low carb)?",
+    q: "Tem para dieta específica (vegano, sem glúten, low carb)?",
     a: "Sim. No onboarding você marca suas restrições e a IA adapta todas as receitas. Substitui automaticamente qualquer item que você não pode comer.",
   },
   {
@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     q: "Como funciona o teste grátis?",
-    a: "Você clica em \"Testar 7 dias grátis\", fala comigo no WhatsApp, eu faço seu briefing personalizado por 7 dias. Se gostar, assina por R$29/mês. Sem cartão pra testar.",
+    a: "Você clica em \"Testar 7 dias grátis\", fala comigo no WhatsApp, eu faço seu briefing personalizado por 7 dias. Se gostar, assina por R$29/mês. Sem cartão para testar.",
   },
   {
     q: "Por que tão barato?",

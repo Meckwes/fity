@@ -1,30 +1,36 @@
 "use client";
-import { Check, MessageCircle } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 
+// WhatsApp do time (variavel) — usado pelo CTA "Falar com o time"
 const WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5511999999999";
-const MSG = encodeURIComponent(
-  process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE ||
-    "Oi! Quero testar o Fity por 7 dias gratis."
+const COACH_MSG = encodeURIComponent(
+  "Olá! Tenho interesse no plano Fity Coach (R$ 79/mês) e queria conversar com o time antes de fechar."
 );
-const WA_LINK = `https://wa.me/${WHATSAPP}?text=${MSG}`;
+const COACH_WA_LINK = `https://wa.me/${WHATSAPP}?text=${COACH_MSG}`;
 
+// Planos - cada um aponta direto pro checkout com plano + preço,
+// EXCETO o Coach, que leva pro WhatsApp do time (é um plano high-ticket
+// com personal humano — a pessoa quer conversar antes de pagar)
 const tiers = [
   {
+    id: "essencial",
     name: "Essencial",
     price: 29,
     badge: null,
     highlight: false,
     desc: "Pra quem tá começando agora",
     features: [
-      "Briefing diário no Zap (7h)",
+      "Briefing diário no WhatsApp (7h)",
       "Plano alimentar personalizado",
       "Treino adaptado ao seu equipamento",
       "Lista de compras semanal (sábado)",
       "Comunidade no Telegram",
     ],
     cta: "Começar com Essencial",
+    href: "/checkout?plan=essencial&price=29",
   },
   {
+    id: "pro",
     name: "Pro",
     price: 49,
     badge: "Mais popular",
@@ -39,8 +45,10 @@ const tiers = [
       "Suporte prioritário",
     ],
     cta: "Quero o Pro",
+    href: "/checkout?plan=pro&price=49",
   },
   {
+    id: "coach",
     name: "Coach",
     price: 79,
     badge: null,
@@ -54,6 +62,7 @@ const tiers = [
       "Convite para grupo VIP",
     ],
     cta: "Falar com o time",
+    href: COACH_WA_LINK,
   },
 ];
 
@@ -69,68 +78,83 @@ export default function Pricing() {
             Mais consistente que um app.
           </h2>
           <p className="mt-4 text-ink-500">
-            Todos os planos incluem 7 dias grátis. Sem cartão pra testar.
+            Todos os planos incluem 7 dias grátis. Sem cartão para testar.
             Cancela quando quiser, sem letra miúda.
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {tiers.map((t, i) => (
-            <div
-              key={i}
-              className={`relative rounded-3xl p-7 transition-all ${
-                t.highlight
-                  ? "bg-gradient-to-b from-green-50 to-white border-2 border-green-500 shadow-xl shadow-green-500/10 scale-[1.03]"
-                  : "bg-white border border-ink-300/50 hover:border-green-300"
-              }`}
-            >
-              {t.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold tracking-wider uppercase px-3 py-1 rounded-full">
-                  {t.badge}
-                </div>
-              )}
-              <div className="text-xs font-bold tracking-widest text-ink-500 uppercase mb-2">
-                {t.name}
-              </div>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-ink-900">
-                  R$ {t.price}
-                </span>
-                <span className="text-ink-500">/mês</span>
-              </div>
-              <p className="text-sm text-ink-500 mb-6">{t.desc}</p>
-              <ul className="space-y-3 mb-7 min-h-[180px]">
-                {t.features.map((f, j) => (
-                  <li key={j} className="flex items-start gap-2.5 text-sm text-ink-700">
-                    <Check
-                      size={18}
-                      className={`shrink-0 mt-0.5 ${
-                        t.highlight ? "text-green-600" : "text-green-500"
-                      }`}
-                    />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <a
-                href={WA_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={
+          {tiers.map((t, i) => {
+            return (
+              <div
+                key={i}
+                className={`relative rounded-3xl p-7 transition-all ${
                   t.highlight
-                    ? "btn-primary w-full"
-                    : "btn-secondary w-full"
-                }
+                    ? "bg-gradient-to-b from-green-50 to-white border-2 border-green-500 shadow-xl shadow-green-500/10 scale-[1.03]"
+                    : "bg-white border border-ink-300/50 hover:border-green-300"
+                }`}
               >
-                <MessageCircle size={18} /> {t.cta}
-              </a>
-            </div>
-          ))}
+                {t.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold tracking-wider uppercase px-3 py-1 rounded-full">
+                    {t.badge}
+                  </div>
+                )}
+                <div className="text-xs font-bold tracking-widest text-ink-500 uppercase mb-2">
+                  {t.name}
+                </div>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className="text-4xl font-extrabold text-ink-900">
+                    R$ {t.price}
+                  </span>
+                  <span className="text-ink-500">/mês</span>
+                </div>
+                <p className="text-sm text-ink-500 mb-6">{t.desc}</p>
+                <ul className="space-y-3 mb-7 min-h-[180px]">
+                  {t.features.map((f, j) => (
+                    <li key={j} className="flex items-start gap-2.5 text-sm text-ink-700">
+                      <Check
+                        size={18}
+                        className={`shrink-0 mt-0.5 ${
+                          t.highlight ? "text-green-600" : "text-green-500"
+                        }`}
+                      />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href={t.href}
+                  target={t.href.startsWith("http") ? "_blank" : undefined}
+                  rel={t.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                  className={
+                    t.highlight
+                      ? "btn-primary w-full"
+                      : "btn-secondary w-full"
+                  }
+                >
+                  {t.cta} <ArrowRight size={18} />
+                </a>
+              </div>
+            );
+          })}
         </div>
 
         <p className="text-center text-sm text-ink-500 mt-8">
           💳 PIX · Cartão · Boleto · Cancela em 1 clique
         </p>
+
+        {/* Link secundario pro trial gratis — pra quem ainda quer testar antes */}
+        <div className="text-center mt-6">
+          <p className="text-sm text-ink-500">
+            Ainda não tem certeza?{" "}
+            <a
+              href="#comecar"
+              className="text-green-700 font-semibold underline underline-offset-4 hover:text-green-800"
+            >
+              Testar grátis por 7 dias antes de decidir →
+            </a>
+          </p>
+        </div>
       </div>
     </section>
   );
