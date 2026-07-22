@@ -192,8 +192,8 @@ export function PaymentForm({
     return "unknown";
   };
 
-  // Info visual das bandeiras (cor oficial + nome curto)
-  // `logo` opcional: se presente, renderiza um SVG custom no lugar do badge textual
+  // Info visual das bandeiras (cor oficial + logo SVG)
+  // Se `logo` existir, renderiza o SVG no lugar do badge textual
   const BRAND_INFO: Record<
     string,
     {
@@ -204,7 +204,31 @@ export function PaymentForm({
       logo?: React.ReactNode;
     }
   > = {
-    visa: { name: "Visa", key: "visa", bg: "bg-[#1A1F71]", text: "VISA" },
+    visa: {
+      name: "Visa",
+      key: "visa",
+      bg: "",
+      text: "",
+      // Logo Visa: texto branco italico bold em fundo azul marinho
+      logo: (
+        <svg viewBox="0 0 50 16" className="w-14 h-5" aria-label="Visa">
+          <rect width="50" height="16" rx="2" fill="#1A1F71" />
+          <text
+            x="25"
+            y="12"
+            textAnchor="middle"
+            fill="white"
+            fontFamily="Arial Black, Helvetica, sans-serif"
+            fontSize="10"
+            fontWeight="900"
+            fontStyle="italic"
+            letterSpacing="0.5"
+          >
+            VISA
+          </text>
+        </svg>
+      ),
+    },
     master: {
       name: "Mastercard",
       key: "master",
@@ -223,25 +247,138 @@ export function PaymentForm({
         </svg>
       ),
     },
-    amex: { name: "Amex", key: "amex", bg: "bg-[#2E77BC]", text: "AMEX" },
-    elo: { name: "Elo", key: "elo", bg: "bg-black", text: "ELO" },
+    amex: {
+      name: "American Express",
+      key: "amex",
+      bg: "",
+      text: "",
+      // Logo Amex: caixa azul com texto branco
+      logo: (
+        <svg viewBox="0 0 50 16" className="w-14 h-5" aria-label="American Express">
+          <rect width="50" height="16" rx="2" fill="#2E77BC" />
+          <text
+            x="25"
+            y="11"
+            textAnchor="middle"
+            fill="white"
+            fontFamily="Arial Black, Helvetica, sans-serif"
+            fontSize="6.5"
+            fontWeight="900"
+            letterSpacing="0.4"
+          >
+            AMERICAN
+          </text>
+          <text
+            x="25"
+            y="15"
+            textAnchor="middle"
+            fill="white"
+            fontFamily="Arial Black, Helvetica, sans-serif"
+            fontSize="6.5"
+            fontWeight="900"
+            letterSpacing="0.4"
+          >
+            EXPRESS
+          </text>
+        </svg>
+      ),
+    },
+    elo: {
+      name: "Elo",
+      key: "elo",
+      bg: "",
+      text: "",
+      // Logo Elo: texto "elo" italico bold em fundo preto
+      logo: (
+        <svg viewBox="0 0 50 16" className="w-14 h-5" aria-label="Elo">
+          <rect width="50" height="16" rx="2" fill="#000" />
+          <text
+            x="25"
+            y="13"
+            textAnchor="middle"
+            fill="white"
+            fontFamily="Arial Black, Helvetica, sans-serif"
+            fontSize="13"
+            fontWeight="900"
+            fontStyle="italic"
+            letterSpacing="0.5"
+          >
+            elo
+          </text>
+        </svg>
+      ),
+    },
     hipercard: {
       name: "Hipercard",
       key: "hipercard",
-      bg: "bg-[#8B0000]",
-      text: "HIPER",
+      bg: "",
+      text: "",
+      // Logo Hipercard: texto branco bold em fundo vermelho escuro
+      logo: (
+        <svg viewBox="0 0 50 16" className="w-14 h-5" aria-label="Hipercard">
+          <rect width="50" height="16" rx="2" fill="#8B0000" />
+          <text
+            x="25"
+            y="11.5"
+            textAnchor="middle"
+            fill="white"
+            fontFamily="Arial Black, Helvetica, sans-serif"
+            fontSize="7"
+            fontWeight="900"
+            letterSpacing="0.3"
+          >
+            HIPERCARD
+          </text>
+        </svg>
+      ),
     },
     diners: {
-      name: "Diners",
+      name: "Diners Club",
       key: "diners",
-      bg: "bg-[#0079BE]",
-      text: "DINERS",
+      bg: "",
+      text: "",
+      // Logo Diners: texto branco bold em fundo azul
+      logo: (
+        <svg viewBox="0 0 50 16" className="w-14 h-5" aria-label="Diners Club">
+          <rect width="50" height="16" rx="2" fill="#0079BE" />
+          <text
+            x="25"
+            y="11.5"
+            textAnchor="middle"
+            fill="white"
+            fontFamily="Arial Black, Helvetica, sans-serif"
+            fontSize="7"
+            fontWeight="900"
+            letterSpacing="0.4"
+          >
+            DINERS
+          </text>
+        </svg>
+      ),
     },
     discover: {
       name: "Discover",
       key: "discover",
-      bg: "bg-[#FF6000]",
-      text: "DISC",
+      bg: "",
+      text: "",
+      // Logo Discover: texto branco bold em fundo laranja
+      logo: (
+        <svg viewBox="0 0 50 16" className="w-14 h-5" aria-label="Discover">
+          <rect width="50" height="16" rx="2" fill="#FF6000" />
+          <text
+            x="25"
+            y="11.5"
+            textAnchor="middle"
+            fill="white"
+            fontFamily="Arial Black, Helvetica, sans-serif"
+            fontSize="6.5"
+            fontWeight="900"
+            letterSpacing="0.4"
+          >
+            DISCOVER
+          </text>
+        </svg>
+      ),
     },
     unknown: { name: "", key: "unknown", bg: "", text: "" },
   };
