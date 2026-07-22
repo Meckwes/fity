@@ -21,8 +21,8 @@ const tiers = [
     desc: "Pra quem tá começando agora",
     features: [
       "Briefing diário no WhatsApp (7h)",
-      "Plano alimentar personalizado",
-      "Treino adaptado ao seu equipamento",
+      "Monte seu plano alimentar personalizado",
+      "Treino no seu ritmo",
       "Lista de compras semanal (sábado)",
       "Comunidade no Telegram",
     ],
@@ -37,11 +37,11 @@ const tiers = [
     highlight: true,
     desc: "Pra quem quer resultado sério",
     features: [
-      "Tudo do Essencial",
+      "Plano Essencial",
       "Adaptação semanal de IA avançada",
       "Substituição infinita de alimentos",
-      "Painel web com histórico de peso",
-      "Acesso ao grupo de coaching",
+      "Relatório semanal de evolução",
+      "Receitas detalhadas sob demanda",
       "Suporte prioritário",
     ],
     cta: "Quero o Pro",
@@ -55,11 +55,11 @@ const tiers = [
     highlight: false,
     desc: "Pra hipertrofia, atletas, performance",
     features: [
-      "Tudo do Pro",
-      "Personal humano 1×/semana (15min)",
+      "Plano Pro",
+      "Personal/nutrição humano por 20min 1×/semana",
       "Ajuste de macros por objetivo",
       "Suporte 24h",
-      "Convite para grupo VIP",
+      "Comunidade VIP no Telegram",
     ],
     cta: "Falar com o time",
     href: COACH_WA_LINK,
@@ -73,13 +73,12 @@ export default function Pricing() {
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="eyebrow">Preços</span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-ink-900 tracking-tight">
-            Menos que uma <span className="text-green-600">refeição fora</span>.
+            Não é mais um app.
             <br />
-            Mais consistente que um app.
+            É seu personal no <span className="text-green-600">Zap</span>, todo dia às 7h.
           </h2>
           <p className="mt-4 text-ink-500">
-            Todos os planos incluem 7 dias grátis. Sem cartão para testar.
-            Cancela quando quiser, sem letra miúda.
+            Todos os planos incluem 7 dias grátis. Cancela em 1 clique, sem multa.
           </p>
         </div>
 
