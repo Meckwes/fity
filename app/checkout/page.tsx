@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Check,
   Shield,
@@ -397,13 +398,13 @@ function CheckoutContent() {
 
                     <p className="text-xs text-slate-500 text-center pt-2">
                       Ao continuar, você concorda com nossos{" "}
-                      <a href="#" className="underline">
+                      <Link href="/termos" className="underline">
                         Termos
-                      </a>{" "}
+                      </Link>{" "}
                       e{" "}
-                      <a href="#" className="underline">
+                      <Link href="/privacidade" className="underline">
                         Política de Privacidade
-                      </a>
+                      </Link>
                       .
                     </p>
                   </div>
@@ -454,13 +455,13 @@ function CheckoutContent() {
 
                   <p className="text-[11px] text-slate-400 text-center mt-5">
                     Ao pagar, você concorda com nossos{" "}
-                    <a href="#" className="underline hover:text-slate-600">
+                    <Link href="/termos" className="underline hover:text-slate-600">
                       Termos
-                    </a>{" "}
+                    </Link>{" "}
                     e{" "}
-                    <a href="#" className="underline hover:text-slate-600">
+                    <Link href="/privacidade" className="underline hover:text-slate-600">
                       Política de Privacidade
-                    </a>
+                    </Link>
                     .
                   </p>
                 </>

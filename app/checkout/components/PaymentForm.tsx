@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   CreditCard,
   Smartphone,
@@ -1006,7 +1007,15 @@ function TrialAcceptance({
         </strong>{" "}
         após <strong className="text-slate-900">{trialDays} dias</strong> caso
         eu não cancele antes. Vou receber um aviso no WhatsApp UM dia antes da
-        cobrança.
+        cobrança. Aceito os{" "}
+        <Link href="/termos" className="underline hover:text-slate-900">
+          Termos
+        </Link>{" "}
+        e a{" "}
+        <Link href="/privacidade" className="underline hover:text-slate-900">
+          Política de Privacidade
+        </Link>
+        .
       </span>
     </label>
   );
