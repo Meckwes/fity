@@ -112,14 +112,14 @@ export default function LeadForm() {
           Comece agora
         </span>
         <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight">
-          Toma a decisão hoje.
+          Bora começar?
           <br />
-          Amanhã 7h seu briefing já tá no Zap.
+          Amanhã 7h teu briefing te espera no Zap.
         </h2>
         <p className="text-white/90 max-w-xl mx-auto mb-10">
-          Deixa teu contato que eu te mando o link do WhatsApp para começar.
+          Coloca teu contato e a gente continua a conversa por lá.
           <br className="hidden sm:block" />
-          7 dias grátis, sem cartão, sem letra miúda.
+          Sem cartão, sem compromisso.
         </p>
 
         <form
@@ -149,7 +149,7 @@ export default function LeadForm() {
               required
               value={phone}
               onChange={(e) => setPhone(formatPhone(e.target.value))}
-              placeholder="(85) 98489-8995"
+              placeholder="Seu WhatsApp (com DDD)"
               maxLength={15}
               className="border border-ink-300 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 sm:col-span-2"
             />
