@@ -167,12 +167,46 @@ export function PaymentForm({
 
   const detectBrand = (num: string): string => {
     const n = num.replace(/\D/g, "");
+    if (n.length === 0) return "unknown";
+    // Visa
     if (/^4/.test(n)) return "visa";
-    if (/^5/.test(n)) return "master";      // Master (51-55 + 2xxx + 5031 teste)
+    // Mastercard: 51-55 (legacy) ou 22-27 (new 2-series 2221-2720)
+    if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return "master";
+    // Amex: 34 ou 37
     if (/^3[47]/.test(n)) return "amex";
-    if (/^6/.test(n)) return "elo";
-    return "visa"; // fallback seguro - MP decide pelo token
+    // Elo (prefixos BR mais comuns)
+    if (
+      /^(4011|4312|4389|5041|6277|6362|6363|6504|6505|6506|6507|6508|6509|6516|6550)/.test(
+        n
+      )
+    )
+      return "elo";
+    // Hipercard
+    if (/^6062/.test(n)) return "hipercard";
+    // Diners
+    if (/^3(0[0-5]|[68])/.test(n)) return "diners";
+    // Discover
+    if (/^(6011|65|64[4-9]|622)/.test(n)) return "discover";
+    return "unknown";
   };
+
+  // Info visual das bandeiras (cor oficial + nome curto)
+  const BRAND_INFO: Record<
+    string,
+    { name: string; bg: string; text: string }
+  > = {
+    visa: { name: "Visa", bg: "bg-[#1A1F71]", text: "VISA" },
+    master: { name: "Mastercard", bg: "bg-[#EB001B]", text: "MC" },
+    amex: { name: "Amex", bg: "bg-[#2E77BC]", text: "AMEX" },
+    elo: { name: "Elo", bg: "bg-black", text: "ELO" },
+    hipercard: { name: "Hipercard", bg: "bg-[#8B0000]", text: "HIPER" },
+    diners: { name: "Diners", bg: "bg-[#0079BE]", text: "DINERS" },
+    discover: { name: "Discover", bg: "bg-[#FF6000]", text: "DISC" },
+    unknown: { name: "", bg: "", text: "" },
+  };
+
+  const currentBrand =
+    BRAND_INFO[detectBrand(cardNumber)] || BRAND_INFO.unknown;
 
   // ============ SUBMIT CARD ============
   async function handleCardSubmit(e: React.FormEvent) {
@@ -200,6 +234,7 @@ export function PaymentForm({
       });
 
       // 3. Envia pro backend criar a payment com o token
+      const detectedBrand = detectBrand(cleanNumber);
       const res = await fetch("/api/process-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,7 +242,8 @@ export function PaymentForm({
           method: "card",
           token,
           installments,
-          paymentMethodId: detectBrand(cleanNumber),
+          // Se nao detectou a bandeira, deixa o MP descobrir pelo BIN
+          paymentMethodId: detectedBrand === "unknown" ? undefined : detectedBrand,
           amount,
           planId,
           planName,
@@ -491,15 +527,29 @@ export function PaymentForm({
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Número do cartão
             </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              required
-              value={cardNumber}
-              onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-              placeholder="0000 0000 0000 0000"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="numeric"
+                required
+                value={cardNumber}
+                onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                placeholder="0000 0000 0000 0000"
+                className="w-full border border-slate-200 rounded-xl pl-4 pr-24 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
+              />
+              {currentBrand.name && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-slate-100 rounded-md pl-1.5 pr-2 py-1 pointer-events-none">
+                  <div
+                    className={`w-7 h-5 rounded ${currentBrand.bg} text-white text-[8px] font-extrabold flex items-center justify-center tracking-tighter`}
+                  >
+                    {currentBrand.text}
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-700">
+                    {currentBrand.name}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
