@@ -18,7 +18,12 @@ export type User = {
   name: string | null;
   onboarding_completed: boolean;
   onboarding_step: string;
+  trial_started_at: string | null;
+  trial_ended_notified: boolean;
 };
+
+const USER_SELECT =
+  "id, phone, lid, name, onboarding_completed, onboarding_step, trial_started_at, trial_ended_notified";
 
 function log(...args: any[]) {
   console.log("[user-store]", ...args);
@@ -31,7 +36,7 @@ function log(...args: any[]) {
 export async function getUserByLid(lid: string): Promise<User | null> {
   const { data, error } = await supabaseAdmin
     .from("users")
-    .select("id, phone, lid, name, onboarding_completed, onboarding_step")
+    .select(USER_SELECT)
     .eq("lid", lid)
     .maybeSingle();
 
@@ -45,7 +50,8 @@ export async function getUserByLid(lid: string): Promise<User | null> {
 /**
  * Busca OU cria um usuario pelo LID.
  * - Se existe: retorna user record
- * - Se nao existe: cria com o LID e nome, e retorna o user record novo
+ *   - Se trial_started_at for null, seta agora (primeira msg do user)
+ * - Se nao existe: cria com o LID, nome e trial_started_at = NOW()
  *
  * Quando cria, tambem tenta extrair o "phone" do LID (se for digitos)
  * como fallback. Util pra BR (ex: LID termina em 12+ digitos).
@@ -58,10 +64,26 @@ export async function getOrCreateUserByLid(
   const existing = await getUserByLid(lid);
   if (existing) {
     log("usuario encontrado:", existing.id, existing.name);
+
+    // Se ainda nao tem trial_started_at, seta agora (primeira msg)
+    if (!existing.trial_started_at) {
+      log("setando trial_started_at (primeira msg):", existing.id);
+      const { data: updated, error: updateErr } = await supabaseAdmin
+        .from("users")
+        .update({ trial_started_at: new Date().toISOString() })
+        .eq("id", existing.id)
+        .select(USER_SELECT)
+        .single();
+
+      if (!updateErr && updated) {
+        return updated as User;
+      }
+      // Se der erro no update, retorna o existing mesmo (graceful degradation)
+    }
     return existing;
   }
 
-  // 2. Nao existe - cria
+  // 2. Nao existe - cria com trial_started_at = NOW()
   log("criando novo usuario pra LID:", lid, "nome:", name);
 
   // Tenta extrair telefone do LID (se for tudo digito, BR format)
@@ -77,6 +99,7 @@ export async function getOrCreateUserByLid(
     }
   }
 
+  const now = new Date().toISOString();
   const { data, error } = await supabaseAdmin
     .from("users")
     .insert({
@@ -86,8 +109,10 @@ export async function getOrCreateUserByLid(
       active: true,
       onboarding_completed: false,
       onboarding_step: "start",
+      trial_started_at: now, // <- NOVO: trial comeca agora
+      trial_ended_notified: false,
     })
-    .select("id, phone, lid, name, onboarding_completed, onboarding_step")
+    .select(USER_SELECT)
     .single();
 
   if (error) {
@@ -95,6 +120,6 @@ export async function getOrCreateUserByLid(
     throw new Error(`Falha ao criar usuario: ${error.message}`);
   }
 
-  log("usuario criado:", data.id, data.name);
-  return data;
+  log("usuario criado:", data.id, data.name, "trial_started_at:", now);
+  return data as User;
 }

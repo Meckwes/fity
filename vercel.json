@@ -10,6 +10,10 @@
       "schedule": "0 13 * * *"
     },
     {
+      "path": "/api/cron/check-trial-ended",
+      "schedule": "0 13 * * *"
+    },
+    {
       "path": "/api/cron/check-expirations",
       "schedule": "0 14 * * *"
     }
