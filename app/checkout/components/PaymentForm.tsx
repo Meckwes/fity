@@ -193,18 +193,57 @@ export function PaymentForm({
   };
 
   // Info visual das bandeiras (cor oficial + nome curto)
+  // `logo` opcional: se presente, renderiza um SVG custom no lugar do badge textual
   const BRAND_INFO: Record<
     string,
-    { name: string; bg: string; text: string }
+    {
+      name: string;
+      key: string;
+      bg: string;
+      text: string;
+      logo?: React.ReactNode;
+    }
   > = {
-    visa: { name: "Visa", bg: "bg-[#1A1F71]", text: "VISA" },
-    master: { name: "Mastercard", bg: "bg-[#EB001B]", text: "MASTERCARD" },
-    amex: { name: "Amex", bg: "bg-[#2E77BC]", text: "AMEX" },
-    elo: { name: "Elo", bg: "bg-black", text: "ELO" },
-    hipercard: { name: "Hipercard", bg: "bg-[#8B0000]", text: "HIPER" },
-    diners: { name: "Diners", bg: "bg-[#0079BE]", text: "DINERS" },
-    discover: { name: "Discover", bg: "bg-[#FF6000]", text: "DISC" },
-    unknown: { name: "", bg: "", text: "" },
+    visa: { name: "Visa", key: "visa", bg: "bg-[#1A1F71]", text: "VISA" },
+    master: {
+      name: "Mastercard",
+      key: "master",
+      bg: "",
+      text: "",
+      // Logo oficial Mastercard: dois circulos entrelacados
+      // Vermelho #EB001B + Laranja #F79E1B, sobreposicao #FF5F00
+      logo: (
+        <svg viewBox="0 0 40 25" className="w-14 h-9" aria-label="Mastercard">
+          <circle cx="15" cy="12.5" r="10" fill="#EB001B" />
+          <circle cx="25" cy="12.5" r="10" fill="#F79E1B" />
+          <path
+            d="M 20 4.5 a 8 8 0 0 1 0 16 a 8 8 0 0 1 0 -16"
+            fill="#FF5F00"
+          />
+        </svg>
+      ),
+    },
+    amex: { name: "Amex", key: "amex", bg: "bg-[#2E77BC]", text: "AMEX" },
+    elo: { name: "Elo", key: "elo", bg: "bg-black", text: "ELO" },
+    hipercard: {
+      name: "Hipercard",
+      key: "hipercard",
+      bg: "bg-[#8B0000]",
+      text: "HIPER",
+    },
+    diners: {
+      name: "Diners",
+      key: "diners",
+      bg: "bg-[#0079BE]",
+      text: "DINERS",
+    },
+    discover: {
+      name: "Discover",
+      key: "discover",
+      bg: "bg-[#FF6000]",
+      text: "DISC",
+    },
+    unknown: { name: "", key: "unknown", bg: "", text: "" },
   };
 
   const currentBrand =
@@ -540,10 +579,16 @@ export function PaymentForm({
                 className="w-full border border-slate-200 rounded-xl pl-4 pr-32 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
               />
               {currentBrand.name && (
-                <div
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-md ${currentBrand.bg} text-white text-[10px] font-extrabold flex items-center justify-center tracking-tight px-2.5 py-1.5 pointer-events-none shadow-sm`}
-                >
-                  {currentBrand.text}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+                  {currentBrand.logo ? (
+                    currentBrand.logo
+                  ) : (
+                    <div
+                      className={`rounded-md ${currentBrand.bg} text-white text-[10px] font-extrabold flex items-center justify-center tracking-tight px-2.5 py-1.5 shadow-sm`}
+                    >
+                      {currentBrand.text}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
