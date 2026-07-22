@@ -10,6 +10,7 @@
 // =================================================================
 
 import { supabaseAdmin } from "./supabase-admin";
+import { titleCase } from "./ai";
 
 export type User = {
   id: string;
@@ -104,7 +105,11 @@ export async function getOrCreateUserByLid(
     .from("users")
     .insert({
       lid,
-      name: name || "Usuario sem nome",
+      // Capitaliza o nome (ex: "pedro silva" -> "Pedro Silva")
+      // Se o nome vier vazio/placeholder, fica "Usuario sem nome" mesmo
+      name: name && name.trim() && name.trim() !== "."
+        ? titleCase(name.trim())
+        : "Usuario sem nome",
       phone: phoneFallback,
       active: true,
       onboarding_completed: false,

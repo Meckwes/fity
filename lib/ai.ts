@@ -706,10 +706,27 @@ User: "to meio sem tempo essa semana"
 //   - is_complete: true só quando terminaram todas as perguntas
 // =================================================================
 
+/**
+ * Helper: capitaliza nome (Title Case).
+ * "maria silva" -> "Maria Silva"
+ * "joão da silva" -> "Joao Da Silva" (sem regras de preposicao, simples)
+ * "MARIA SILVA" -> "Maria Silva"
+ */
+export function titleCase(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 0)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 // Etapas do onboarding (em ordem)
 // Os valores batem com o CHECK constraint da coluna onboarding_step
 export const ONBOARDING_STEPS = [
   "start",
+  "name", // <- NOVO: pergunta o nome primeiro (personaliza todas as msgs seguintes)
   "goal",
   "weight",
   "height",
@@ -723,6 +740,7 @@ export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
 // Tipos dos dados extraídos em cada etapa
 export type OnboardingExtracted = {
+  name?: string; // <- NOVO: nome do user (salvo em users.name, NAO em profiles)
   goal?: "emagrecer" | "ganhar-massa" | "saude" | "performance" | "recomecar";
   current_weight_kg?: number;
   height_cm?: number;
@@ -789,10 +807,10 @@ export async function generateOnboardingStep(
     };
   }
 
-  // 2. Define etapa atual (se "start", assume "goal" como primeira real)
+  // 2. Define etapa atual (se "start", assume "name" como primeira real)
   const currentStep: OnboardingStep =
     params.currentStep === "start" || !ONBOARDING_STEPS.includes(params.currentStep as OnboardingStep)
-      ? "goal"
+      ? "name"
       : (params.currentStep as OnboardingStep);
 
   // 3. Monta o contexto do onboarding
@@ -801,7 +819,8 @@ export async function generateOnboardingStep(
 
   // Instrucao especifica por etapa
   const stepInstructions: Record<OnboardingStep, string> = {
-    start: "Apresente-se brevemente e faca a PRIMEIRA pergunta (sobre objetivo).",
+    start: "Apresente-se brevemente e faca a PRIMEIRA pergunta (sobre o nome do usuario - como ele quer ser chamado).",
+    name: "PRIMEIRA ETAPA REAL: Extraia o NOME do usuario. Pergunte de forma casual 'Como posso te chamar?' ou 'Qual teu nome?'. Aceite qualquer texto de 2+ palavras (ex: 'Pedro', 'Pedro Silva', 'me chama de Pedrinho'). Salve em users.name via extracted.name. NAO salve em profiles - eh campo de user.",
     goal: "Extraia o OBJETIVO PRINCIPAL do usuario. Valores validos: emagrecer, ganhar-massa, saude, performance, recomecar.",
     weight: "Extraia o PESO ATUAL em kg (numero). Valores validos: 30 a 300.",
     height: "Extraia a ALTURA em cm (numero). Valores validos: 100 a 250.",

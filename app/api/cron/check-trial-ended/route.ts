@@ -27,6 +27,35 @@ function isAuthorized(req: Request): boolean {
   return auth === `Bearer ${expected}`;
 }
 
+/**
+ * Helper: extrai o primeiro nome do user, tratando placeholders
+ * e capitalizando corretamente.
+ *
+ * "Pedro" -> "Pedro"
+ * "pedro silva" -> "Pedro"
+ * "." -> "amigo" (fallback)
+ * "Usuario sem nome" -> "amigo" (fallback)
+ * "" -> "amigo" (fallback)
+ * null -> "amigo" (fallback)
+ */
+function getFirstName(name: string | null | undefined): string {
+  if (!name) return "amigo";
+  const trimmed = name.trim();
+  // Trata placeholders / nomes invalidos
+  if (
+    !trimmed ||
+    trimmed === "." ||
+    trimmed === "Usuario sem nome" ||
+    trimmed === "Usuario Sem Nome" ||
+    trimmed.length < 2
+  ) {
+    return "amigo";
+  }
+  // Pega so o primeiro nome e capitaliza
+  const firstWord = trimmed.split(/\s+/)[0];
+  return firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+}
+
 type User = {
   id: string;
   phone: string | null;
@@ -117,7 +146,7 @@ export async function GET(req: Request) {
         continue;
       }
 
-      const firstName = (user.name || "amigo").split(" ")[0];
+      const firstName = getFirstName(user.name);
       const checkoutLink = `${fityBaseUrl}/checkout?renewal=1`;
 
       const message =

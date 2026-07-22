@@ -15,7 +15,7 @@
 
 import { supabaseAdmin } from "./supabase-admin";
 import type { OnboardingExtracted, OnboardingStep } from "./ai";
-import { getNextOnboardingStep } from "./ai";
+import { getNextOnboardingStep, titleCase } from "./ai";
 
 function log(...args: any[]) {
   console.log("[onboarding-store]", ...args);
@@ -133,10 +133,19 @@ export async function saveOnboardingStep(
   const newStep: OnboardingStep = isComplete ? "done" : getNextOnboardingStep(currentStep);
   const completed = isComplete || newStep === "done";
 
-  // 4) Atualiza user
+  // 4) Atualiza user (incluindo o nome se veio do onboarding)
   const userUpdate: Record<string, any> = { onboarding_step: newStep };
   if (completed) {
     userUpdate.onboarding_completed = true;
+  }
+  // Se a IA extraiu o nome do user, salva capitalizado em users.name
+  // (sobrescreve o placeholder que veio do WhatsApp push name)
+  if (extracted && extracted.name) {
+    const cleanName = titleCase(extracted.name.trim());
+    if (cleanName && cleanName !== "." && cleanName !== "Usuario Sem Nome") {
+      userUpdate.name = cleanName;
+      log("nome atualizado:", cleanName, "(era:", userUpdate.name, ")");
+    }
   }
 
   const { error: userErr } = await supabaseAdmin
