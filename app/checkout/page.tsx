@@ -44,10 +44,10 @@ const PLANS = {
   essencial: {
     id: "essencial",
     name: "Fity Essencial",
-    description: "Briefing diario no Zap + plano personalizado",
+    description: "Briefing diário no Zap + plano personalizado",
     price: 29.0,
     features: [
-      "Briefing diario no WhatsApp (7h)",
+      "Briefing diário no WhatsApp (7h)",
       "Plano alimentar personalizado",
       "Treino adaptado ao equipamento",
       "Lista de compras semanal",
@@ -56,13 +56,13 @@ const PLANS = {
   pro: {
     id: "pro",
     name: "Fity Pro",
-    description: "Briefing + adaptacao semanal + comunidade",
+    description: "Briefing + adaptação semanal + comunidade",
     price: 49.0,
     features: [
       "Tudo do Essencial",
-      "Adaptacao semanal por IA",
-      "Substituicao infinita de alimentos",
-      "Painel web com historico",
+      "Adaptação semanal por IA",
+      "Substituição infinita de alimentos",
+      "Painel web com histórico",
       "Grupo de comunidade no Telegram",
     ],
     popular: true,
@@ -74,7 +74,7 @@ const PLANS = {
     price: 79.0,
     features: [
       "Tudo do Pro",
-      "Personal humano 1x/semana (15min)",
+      "Personal humano 1x/semana (20min)",
       "Ajuste de macros por objetivo",
       "Suporte prioridade",
     ],
@@ -84,11 +84,45 @@ const PLANS = {
 type PlanId = keyof typeof PLANS;
 type Step = "form" | "payment";
 
-// Validadores simples
+// Validadores e máscaras
 const isValidEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
-const isValidPhone = (s: string) => onlyDigits(s).length >= 10 && onlyDigits(s).length <= 13;
-const isValidCPF = (s: string) => onlyDigits(s).length === 11;
+
+// Telefone: 10 dígitos (fixo) ou 11 dígitos (celular com 9)
+const isValidPhone = (s: string) => {
+  const d = onlyDigits(s);
+  return d.length === 10 || d.length === 11;
+};
+
+// CPF: 11 dígitos, rejeita todos dígitos iguais (000.000.000-00 etc)
+const isValidCPF = (s: string) => {
+  const d = onlyDigits(s);
+  if (d.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(d)) return false;
+  return true;
+};
+
+// Máscara de telefone: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX, limitado a 11 números
+const formatPhone = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+// Máscara de CPF: XXX.XXX.XXX-XX, limitado a 11 números
+const formatCPF = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9)
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
 
 // Planos validos (evita injection)
 const VALID_PLANS: PlanId[] = ["essencial", "pro", "coach"];
@@ -130,25 +164,32 @@ function CheckoutContent() {
     setStep("payment");
   }
 
+  // Valido/invalido em tempo real (pra travar o botao)
+  const isNameValid = name.trim().length >= 3;
+  const isEmailValid = isValidEmail(email);
+  const isPhoneValid = isValidPhone(phone);
+  const isCpfValid = isValidCPF(cpf);
+  const isFormValid = isNameValid && isEmailValid && isPhoneValid && isCpfValid;
+
   // Handler do botao "Continuar"
   function handleContinuar(e: React.FormEvent) {
     e.preventDefault();
 
     // Validacao
-    if (name.trim().length < 3) {
-      setError("Nome completo e obrigatorio");
+    if (!isNameValid) {
+      setError("Nome completo é obrigatório");
       return;
     }
-    if (!isValidEmail(email)) {
-      setError("Email invalido");
+    if (!isEmailValid) {
+      setError("Email inválido");
       return;
     }
-    if (!isValidPhone(phone)) {
-      setError("Telefone invalido (precisa ter DDD + numero)");
+    if (!isPhoneValid) {
+      setError("Telefone inválido (precisa ter DDD + número)");
       return;
     }
-    if (!isValidCPF(cpf)) {
-      setError("CPF invalido (precisa ter 11 digitos)");
+    if (!isCpfValid) {
+      setError("CPF inválido (precisa ter 11 dígitos)");
       return;
     }
 
@@ -270,10 +311,7 @@ function CheckoutContent() {
                     {/* Email */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                        Email{" "}
-                        <span className="text-slate-400 font-normal">
-                          (usado pra PIX)
-                        </span>
+                        Email
                       </label>
                       <div className="relative">
                         <Mail
@@ -285,7 +323,7 @@ function CheckoutContent() {
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="maria@email.com"
+                          placeholder="Seu Melhor Email"
                           className="w-full border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
                         />
                       </div>
@@ -305,8 +343,9 @@ function CheckoutContent() {
                           required
                           type="tel"
                           value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
+                          onChange={(e) => setPhone(formatPhone(e.target.value))}
                           placeholder="(11) 98888-7777"
+                          maxLength={15}
                           className="w-full border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
                         />
                       </div>
@@ -315,10 +354,7 @@ function CheckoutContent() {
                     {/* CPF */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                        CPF{" "}
-                        <span className="text-slate-400 font-normal">
-                          (pra nota fiscal)
-                        </span>
+                        CPF
                       </label>
                       <div className="relative">
                         <IdCard
@@ -330,7 +366,7 @@ function CheckoutContent() {
                           type="text"
                           inputMode="numeric"
                           value={cpf}
-                          onChange={(e) => setCpf(e.target.value)}
+                          onChange={(e) => setCpf(formatCPF(e.target.value))}
                           placeholder="000.000.000-00"
                           maxLength={14}
                           className="w-full border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
@@ -346,7 +382,7 @@ function CheckoutContent() {
 
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || !isFormValid}
                       className="btn-primary w-full mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? (
@@ -360,13 +396,13 @@ function CheckoutContent() {
                     </button>
 
                     <p className="text-xs text-slate-500 text-center pt-2">
-                      Ao continuar, voce concorda com nossos{" "}
+                      Ao continuar, você concorda com nossos{" "}
                       <a href="#" className="underline">
                         Termos
                       </a>{" "}
                       e{" "}
                       <a href="#" className="underline">
-                        Politica de Privacidade
+                        Política de Privacidade
                       </a>
                       .
                     </p>
@@ -388,11 +424,11 @@ function CheckoutContent() {
                       <CreditCard size={14} /> Pagamento
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                      Como voce quer pagar?
+                      Como você quer pagar?
                     </h1>
                     <p className="text-slate-500 mt-1 text-sm">
-                      Escolha entre cartao ou PIX. O pagamento e processado na
-                      hora, sem sair dessa pagina.
+                      Escolha entre cartão ou PIX. O pagamento é processado na
+                      hora, sem sair dessa página.
                     </p>
                     <div className="mt-3 inline-flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded-full px-3 py-1.5">
                       <User size={12} />
@@ -400,8 +436,8 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  {/* PaymentForm custom (cartao + PIX direto, sem modal, sem redirect)
-                      trialDays: por padrao e 7 (todos os planos incluem 7 dias gratis).
+                  {/* PaymentForm custom (cartão + PIX direto, sem modal, sem redirect)
+                      trialDays: por padrão é 7 (todos os planos incluem 7 dias grátis).
                       Pra "pular o trial e pagar agora" passa ?paynow=1 na URL. */}
                   <PaymentForm
                     amount={plan.price}
@@ -417,13 +453,13 @@ function CheckoutContent() {
                   />
 
                   <p className="text-[11px] text-slate-400 text-center mt-5">
-                    Ao pagar, voce concorda com nossos{" "}
+                    Ao pagar, você concorda com nossos{" "}
                     <a href="#" className="underline hover:text-slate-600">
                       Termos
                     </a>{" "}
                     e{" "}
                     <a href="#" className="underline hover:text-slate-600">
-                      Politica de Privacidade
+                      Política de Privacidade
                     </a>
                     .
                   </p>
@@ -494,7 +530,7 @@ function CheckoutContent() {
                           <div className="font-bold text-slate-900">
                             R$ {p.price.toFixed(0)}
                             <span className="text-xs text-slate-500 font-normal">
-                              /mes
+                              /mês
                             </span>
                           </div>
                         </div>
@@ -507,7 +543,7 @@ function CheckoutContent() {
               {/* Card principal de resumo */}
               <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-xl">
                 <div className="flex items-center gap-2 text-xs font-bold tracking-widest text-green-400 uppercase mb-3">
-                  <Zap size={14} /> Briefing diario personalizado
+                  <Zap size={14} /> Briefing diário personalizado
                 </div>
 
                 <h2 className="text-2xl font-extrabold mb-1">{plan.name}</h2>
@@ -538,12 +574,12 @@ function CheckoutContent() {
                   </div>
                   <div className="flex justify-between text-slate-300">
                     <span>Setup</span>
-                    <span className="text-green-400">Gratis</span>
+                    <span className="text-green-400">Grátis</span>
                   </div>
                   <div className="border-t border-slate-700 my-3" />
                   <div className="flex justify-between items-baseline">
                     <span className="text-slate-300 font-medium">
-                      Total / mes
+                      Total / mês
                     </span>
                     <span className="text-3xl font-extrabold text-white">
                       R$ {plan.price.toFixed(2).replace(".", ",")}
@@ -555,7 +591,7 @@ function CheckoutContent() {
                 <div className="mt-5 pt-5 border-t border-slate-700 flex items-center gap-3 text-xs text-slate-400">
                   <Shield size={20} className="text-green-400 shrink-0" />
                   <span>
-                    7 dias gratis. Cancela quando quiser, sem multa, sem ligar
+                    7 dias grátis. Cancela quando quiser, sem multa, sem ligar
                     pra central.
                   </span>
                 </div>
