@@ -591,7 +591,7 @@ function CheckoutContent() {
                 <div className="mt-5 pt-5 border-t border-slate-700 flex items-center gap-3 text-xs text-slate-400">
                   <Shield size={20} className="text-green-400 shrink-0" />
                   <span>
-                    7 dias grátis. Cancela quando quiser, sem multa, sem ligar
+                    7 dias grátis. Cancele quando quiser, sem multa, sem ligar
                     pra central.
                   </span>
                 </div>
