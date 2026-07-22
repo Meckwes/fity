@@ -168,21 +168,23 @@ export function PaymentForm({
   const detectBrand = (num: string): string => {
     const n = num.replace(/\D/g, "");
     if (n.length === 0) return "unknown";
-    // Visa
-    if (/^4/.test(n)) return "visa";
-    // Mastercard: 51-55 (legacy) ou 22-27 (new 2-series 2221-2720)
-    if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return "master";
-    // Amex: 34 ou 37
-    if (/^3[47]/.test(n)) return "amex";
-    // Elo (prefixos BR mais comuns)
+    // IMPORTANTE: checar bandeiras especificas ANTES das genericas
+    // (Elo e Hipercard compartilham prefixos com Visa e Discover)
+    // Elo: prefixos BR (4011, 4312, 4389, 5041, 6277, 6362, 6363, 6504-6509, 6516, 6550)
     if (
       /^(4011|4312|4389|5041|6277|6362|6363|6504|6505|6506|6507|6508|6509|6516|6550)/.test(
         n
       )
     )
       return "elo";
-    // Hipercard
+    // Hipercard: 6062
     if (/^6062/.test(n)) return "hipercard";
+    // Visa: comeca com 4 (mas NAO eh Elo/Hipercard)
+    if (/^4/.test(n)) return "visa";
+    // Mastercard: 51-55 (legacy) ou 22-27 (new 2-series 2221-2720)
+    if (/^5[1-5]/.test(n) || /^2[2-7]/.test(n)) return "master";
+    // Amex: 34 ou 37
+    if (/^3[47]/.test(n)) return "amex";
     // Diners
     if (/^3(0[0-5]|[68])/.test(n)) return "diners";
     // Discover
@@ -196,7 +198,7 @@ export function PaymentForm({
     { name: string; bg: string; text: string }
   > = {
     visa: { name: "Visa", bg: "bg-[#1A1F71]", text: "VISA" },
-    master: { name: "Mastercard", bg: "bg-[#EB001B]", text: "MC" },
+    master: { name: "Mastercard", bg: "bg-[#EB001B]", text: "MASTERCARD" },
     amex: { name: "Amex", bg: "bg-[#2E77BC]", text: "AMEX" },
     elo: { name: "Elo", bg: "bg-black", text: "ELO" },
     hipercard: { name: "Hipercard", bg: "bg-[#8B0000]", text: "HIPER" },
@@ -535,7 +537,7 @@ export function PaymentForm({
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                 placeholder="0000 0000 0000 0000"
-                className="w-full border border-slate-200 rounded-xl pl-4 pr-16 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
+                className="w-full border border-slate-200 rounded-xl pl-4 pr-32 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
               />
               {currentBrand.name && (
                 <div
