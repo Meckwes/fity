@@ -252,33 +252,21 @@ export function PaymentForm({
       key: "amex",
       bg: "",
       text: "",
-      // Logo Amex: caixa azul com texto branco
+      // Logo Amex: caixa azul com "AMEX" bold (padrao igual as outras bandeiras)
       logo: (
         <svg viewBox="0 0 50 16" className="w-14 h-5" aria-label="American Express">
           <rect width="50" height="16" rx="2" fill="#2E77BC" />
           <text
             x="25"
-            y="11"
+            y="12"
             textAnchor="middle"
             fill="white"
             fontFamily="Arial Black, Helvetica, sans-serif"
-            fontSize="6.5"
+            fontSize="9.5"
             fontWeight="900"
-            letterSpacing="0.4"
+            letterSpacing="1"
           >
-            AMERICAN
-          </text>
-          <text
-            x="25"
-            y="15"
-            textAnchor="middle"
-            fill="white"
-            fontFamily="Arial Black, Helvetica, sans-serif"
-            fontSize="6.5"
-            fontWeight="900"
-            letterSpacing="0.4"
-          >
-            EXPRESS
+            AMEX
           </text>
         </svg>
       ),
