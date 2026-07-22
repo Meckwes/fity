@@ -813,21 +813,24 @@ export async function generateOnboardingStep(
       ? "name"
       : (params.currentStep as OnboardingStep);
 
+  // DEBUG: log qual step estamos usando (importante pra entender o flow)
+  console.log(`[onboarding] params.currentStep="${params.currentStep}" -> resolved to "${currentStep}"`);
+
   // 3. Monta o contexto do onboarding
   const collectedJson = JSON.stringify(params.collectedData, null, 2);
   const isFirstMessage = params.history.length === 0;
 
   // Instrucao especifica por etapa
   const stepInstructions: Record<OnboardingStep, string> = {
-    start: "Apresente-se brevemente e faca a PRIMEIRA pergunta (sobre o nome do usuario - como ele quer ser chamado).",
-    name: "PRIMEIRA ETAPA REAL: Extraia o NOME do usuario. Pergunte de forma casual 'Como posso te chamar?' ou 'Qual teu nome?'. Aceite qualquer texto de 2+ palavras (ex: 'Pedro', 'Pedro Silva', 'me chama de Pedrinho'). Salve em users.name via extracted.name. NAO salve em profiles - eh campo de user.",
-    goal: "Extraia o OBJETIVO PRINCIPAL do usuario. Valores validos: emagrecer, ganhar-massa, saude, performance, recomecar.",
-    weight: "Extraia o PESO ATUAL em kg (numero). Valores validos: 30 a 300.",
-    height: "Extraia a ALTURA em cm (numero). Valores validos: 100 a 250.",
-    equipment: "Extraia o EQUIPAMENTO (array). Valores possiveis: academia, academia_completa, halter, elastico, peso_corporal, barra, maquinas.",
-    restrictions: "Extraia RESTRICOES ALIMENTARES (array). Valores possiveis: vegano, vegetariano, sem_gluten, sem_lactose, sem_ovos, nenhuma.",
-    workout_time: "Extraia o HORARIO PREFERIDO. Valores validos: manha, almoco, tarde, noite.",
-    done: "Onboarding finalizado. Celebre e diga que o primeiro briefing sera gerado.",
+    start: "PRIMEIRA MSG: Apresente-se brevemente e faca a PRIMEIRA pergunta - O NOME do usuario. NAO pergunte objetivo/peso/altura nesta primeira mensagem. A unica coisa que importa agora eh: como o usuario quer ser chamado.",
+    name: "ETAPA ATUAL OBRIGATORIA: NOME. ATENCAO MAXIMA: mesmo se o historico de mensagens anteriores falar sobre objetivo/peso/altura, IGNORE TUDO ISSO. A etapa 'name' eh a PRIMEIRA etapa real do onboarding. NAO faca perguntas de objetivo, peso, altura, equipamento, restricao ou horario nesta etapa. PERGUNTE APENAS O NOME do usuario. Exemplo de message: 'E ai! Pra gente comecar, como posso te chamar?'. Extraia o nome em extracted.name (sobrescreve qualquer placeholder).",
+    goal: "ETAPA ATUAL: OBJETIVO PRINCIPAL. Extraia o OBJETIVO PRINCIPAL do usuario. Valores validos: emagrecer, ganhar-massa, saude, performance, recomecar.",
+    weight: "ETAPA ATUAL: PESO ATUAL. Extraia o PESO ATUAL em kg (numero). Valores validos: 30 a 300.",
+    height: "ETAPA ATUAL: ALTURA. Extraia a ALTURA em cm (numero). Valores validos: 100 a 250.",
+    equipment: "ETAPA ATUAL: EQUIPAMENTO. Extraia o EQUIPAMENTO (array). Valores possiveis: academia, academia_completa, halter, elastico, peso_corporal, barra, maquinas.",
+    restrictions: "ETAPA ATUAL: RESTRICOES ALIMENTARES. Extraia RESTRICOES ALIMENTARES (array). Valores possiveis: vegano, vegetariano, sem_gluten, sem_lactose, sem_ovos, nenhuma.",
+    workout_time: "ETAPA ATUAL: HORARIO PREFERIDO. Extraia o HORARIO PREFERIDO. Valores validos: manha, almoco, tarde, noite.",
+    done: "ETAPA ATUAL: ONBOARDING FINALIZADO. Celebre e diga que o primeiro briefing sera gerado.",
   };
 
   const systemInstruction = `${FITY_SYSTEM_INSTRUCTION}
