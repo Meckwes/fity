@@ -9,22 +9,52 @@ const WA_MSG = encodeURIComponent(
 );
 const WA_LINK = `https://wa.me/${WHATSAPP}?text=${WA_MSG}`;
 
+// Validadores e máscaras (mesma logica do checkout)
+const isValidEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+const onlyDigits = (s: string) => s.replace(/\D/g, "");
+const isValidPhone = (s: string) => {
+  const d = onlyDigits(s);
+  return d.length === 10 || d.length === 11;
+};
+const formatPhone = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 export default function LeadForm() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados controlados (pra mascara e validacao em tempo real)
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  // Validacao em tempo real (trava o botao se invalido)
+  const isNameValid = name.trim().length >= 3;
+  const isEmailValid = isValidEmail(email);
+  const isPhoneValid = isValidPhone(phone);
+  const isFormValid = isNameValid && isEmailValid && isPhoneValid;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const fd = new FormData(e.currentTarget);
+    // Pega o goal do select (unico nao-controlado)
+    const goal = (e.currentTarget.elements.namedItem("goal") as HTMLSelectElement)?.value || "";
+
     const payload = {
-      name: fd.get("name"),
-      email: fd.get("email"),
-      whatsapp: fd.get("whatsapp"),
-      goal: fd.get("goal"),
+      name,
+      email,
+      whatsapp: phone,
+      goal,
     };
 
     try {
@@ -44,6 +74,9 @@ export default function LeadForm() {
       }
 
       setDone(true);
+      setName("");
+      setEmail("");
+      setPhone("");
       (e.target as HTMLFormElement).reset();
     } catch (err) {
       // Erro de rede (sem internet, servidor caiu, etc)
@@ -97,6 +130,8 @@ export default function LeadForm() {
             <input
               name="name"
               required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Seu nome"
               className="border border-ink-300 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
             />
@@ -104,13 +139,18 @@ export default function LeadForm() {
               name="email"
               required
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Seu email"
               className="border border-ink-300 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
             />
             <input
               name="whatsapp"
               required
-              placeholder="Seu WhatsApp (com DDD)"
+              value={phone}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
+              placeholder="(85) 98489-8995"
+              maxLength={15}
               className="border border-ink-300 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 sm:col-span-2"
             />
             <select
@@ -130,8 +170,8 @@ export default function LeadForm() {
           </div>
           <button
             type="submit"
-            disabled={loading}
-            className="btn-primary w-full mt-6"
+            disabled={loading || !isFormValid}
+            className="btn-primary w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
