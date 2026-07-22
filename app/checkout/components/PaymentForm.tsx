@@ -235,15 +235,27 @@ export function PaymentForm({
       key: "master",
       bg: "",
       text: "",
-      // Logo oficial Mastercard: dois circulos entrelacados
-      // Vermelho #EB001B + Laranja #F79E1B, sobreposicao #FF5F00
+      // Logo oficial Mastercard: 2 circulos entrelacados
+      // Vermelho #EB001B + Laranja #F79E1B, sobreposicao #FF5F00 (so na interseccao real)
+      // Usa clipPath pra que a cor escura apareca EXATAMENTE onde os 2 se cruzam
       logo: (
         <svg viewBox="0 0 40 25" className="w-14 h-9" aria-label="Mastercard">
-          <circle cx="15" cy="12.5" r="10" fill="#EB001B" />
+          <defs>
+            <clipPath id="mc-red-clip">
+              <circle cx="15" cy="12.5" r="10" />
+            </clipPath>
+          </defs>
+          {/* Circulo laranja (depois coberto parcialmente pelo vermelho) */}
           <circle cx="25" cy="12.5" r="10" fill="#F79E1B" />
-          <path
-            d="M 20 4.5 a 8 8 0 0 1 0 16 a 8 8 0 0 1 0 -16"
+          {/* Circulo vermelho (cobre metade do laranja) */}
+          <circle cx="15" cy="12.5" r="10" fill="#EB001B" />
+          {/* Laranja escuro - clipado pela area do vermelho, so aparece na interseccao */}
+          <circle
+            cx="25"
+            cy="12.5"
+            r="10"
             fill="#FF5F00"
+            clipPath="url(#mc-red-clip)"
           />
         </svg>
       ),
