@@ -161,7 +161,7 @@ export function PaymentForm({
   const formatCardNumber = (v: string) =>
     v
       .replace(/\D/g, "")
-      .slice(0, 19)
+      .slice(0, 16)
       .replace(/(\d{4})(?=\d)/g, "$1 ")
       .trim();
 
@@ -478,7 +478,7 @@ export function PaymentForm({
                     <strong>{trialChargeDate}</strong> ({trialDays} dias).
                   </p>
                   <ul className="text-xs text-green-700 mt-2 space-y-1">
-                    <li>✓ Te avisamos 1 dia antes pelo WhatsApp</li>
+                    <li>✓ Te avisaremos 1 dia antes pelo WhatsApp</li>
                     <li>✓ Cancele até {trialCancelDeadline} e nada será cobrado</li>
                     <li>✓ Sem multa, sem ligação pra central</li>
                   </ul>
@@ -532,16 +532,19 @@ export function PaymentForm({
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Ano</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                required
-                maxLength={4}
-                value={expiryYear}
-                onChange={(e) => setExpiryYear(e.target.value.replace(/\D/g, ""))}
-                placeholder="2030"
-                className="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm text-center focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none select-none">20</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  maxLength={2}
+                  value={expiryYear}
+                  onChange={(e) => setExpiryYear(e.target.value.replace(/\D/g, ""))}
+                  placeholder="30"
+                  className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-3 text-sm text-center focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">CVV</label>
@@ -785,7 +788,7 @@ function TrialAcceptance({
       <span className="text-xs text-slate-700 leading-relaxed">
         Estou ciente de que meu cartão será cobrado{" "}
         <strong className="text-slate-900">
-          R$ {amount.toFixed(2).replace(".", ",")}
+          em R$ {amount.toFixed(2).replace(".", ",")}
         </strong>{" "}
         após <strong className="text-slate-900">{trialDays} dias</strong> caso
         eu não cancele antes. Vou receber um aviso no WhatsApp 1 dia antes da
