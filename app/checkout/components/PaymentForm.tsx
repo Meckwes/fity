@@ -535,18 +535,13 @@ export function PaymentForm({
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                 placeholder="0000 0000 0000 0000"
-                className="w-full border border-slate-200 rounded-xl pl-4 pr-24 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
+                className="w-full border border-slate-200 rounded-xl pl-4 pr-16 py-3 text-sm focus:outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100 transition"
               />
               {currentBrand.name && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-slate-100 rounded-md pl-1.5 pr-2 py-1 pointer-events-none">
-                  <div
-                    className={`w-7 h-5 rounded ${currentBrand.bg} text-white text-[8px] font-extrabold flex items-center justify-center tracking-tighter`}
-                  >
-                    {currentBrand.text}
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-700">
-                    {currentBrand.name}
-                  </span>
+                <div
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-md ${currentBrand.bg} text-white text-[10px] font-extrabold flex items-center justify-center tracking-tight px-2.5 py-1.5 pointer-events-none shadow-sm`}
+                >
+                  {currentBrand.text}
                 </div>
               )}
             </div>
