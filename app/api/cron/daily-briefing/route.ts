@@ -201,13 +201,17 @@ export async function GET(req: Request) {
     // =================================================================
     for (const recipient of queue) {
       stats.processed++;
-      const phone = recipient.phone;
+      // IMPORTANTE: o bot whatsapp-web.js identifica o contato pelo LID,
+      // NAO pelo numero de telefone. O `phone` do user pode estar sujo
+      // (user-store.ts salva digitos do LID quando nao acha telefone real).
+      // Sempre usar `recipient.lid` pro envio.
+      const phone = recipient.lid;
       const recipientName = recipient.name;
 
       try {
         if (!phone) {
           stats.skipped++;
-          stats.errors.push(`no_phone: ${recipient.user_id}`);
+          stats.errors.push(`no_lid: ${recipient.user_id}`);
           continue;
         }
 

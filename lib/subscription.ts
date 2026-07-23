@@ -137,7 +137,12 @@ export async function hasActiveAccess(email: string): Promise<boolean> {
 
 export type BriefingRecipient = {
   user_id: string;
-  phone: string;
+  // phone é o numero "real" (vem do checkout ou null). Pode ser null/lixo
+  // pra usuarios que vieram so pelo Zap (LID-only). NAO usar pra envio.
+  phone: string | null;
+  // lid é o identificador real que o bot whatsapp-web.js aceita.
+  // SEMPRE preferir esse pra enviar mensagens.
+  lid: string;
   name: string;
   source: "paid" | "trial";
 };
@@ -146,11 +151,16 @@ export type BriefingRecipient = {
  * Retorna todos os usuarios que devem receber o briefing diario das 7h.
  * Unifica: assinantes pagos (via trials) + trial users (via users).
  *
+ * IMPORTANTE: o bot whatsapp-web.js identifica contatos pelo LID, nao
+ * pelo numero de telefone. Por isso o recipient retorna o `lid` alem
+ * do `phone` (que pode estar sujo com digitos do proprio LID, bug do
+ * user-store.ts).
+ *
  * @example
  *   const r = await getEligibleBriefingRecipients();
  *   // r = [
- *   //   { user_id, phone, name, source: "paid" },
- *   //   { user_id, phone, name, source: "trial" },
+ *   //   { user_id, lid: "187178986528995@lid", phone: null, name: "Maria", source: "paid" },
+ *   //   { user_id, lid: "123456789012345@lid", phone: "5511...", name: "Joao", source: "trial" },
  *   // ]
  */
 export async function getEligibleBriefingRecipients(): Promise<BriefingRecipient[]> {
@@ -184,7 +194,7 @@ export async function getEligibleBriefingRecipients(): Promise<BriefingRecipient
   // 2) Users com onboarding completo (cobre trial E pago pelo users table)
   const { data: users, error: usersErr } = await supabaseAdmin
     .from("users")
-    .select("id, phone, name, trial_started_at, onboarding_completed")
+    .select("id, phone, lid, name, trial_started_at, onboarding_completed")
     .eq("onboarding_completed", true);
 
   if (usersErr) {
@@ -193,15 +203,20 @@ export async function getEligibleBriefingRecipients(): Promise<BriefingRecipient
   }
 
   // 3) Filtra: pago (com plano ativo) OU em trial (7 dias)
+  //    Pula se nao tiver LID (sem identificador Zap, nao tem como enviar)
   const recipients: BriefingRecipient[] = [];
   for (const u of users || []) {
-    if (!u.phone) continue;
+    if (!u.lid) {
+      console.warn(`[briefing-recipients] pulando user ${u.id} (${u.name}): sem LID`);
+      continue;
+    }
 
-    if (paidPhones.has(u.phone)) {
+    if (u.phone && paidPhones.has(u.phone)) {
       // Assinante pago
       recipients.push({
         user_id: u.id,
         phone: u.phone,
+        lid: u.lid,
         name: paidNamesByPhone.get(u.phone) || u.name || "amigo(a)",
         source: "paid",
       });
@@ -209,7 +224,8 @@ export async function getEligibleBriefingRecipients(): Promise<BriefingRecipient
       // Em trial (ainda dentro dos 7 dias gratis)
       recipients.push({
         user_id: u.id,
-        phone: u.phone,
+        phone: u.phone || null,
+        lid: u.lid,
         name: u.name || "amigo(a)",
         source: "trial",
       });
