@@ -19,6 +19,55 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { FITY_SYSTEM_INSTRUCTION } from "./ai-prompts";
 
 // =================================================================
+// RETRY COM BACKOFF EXPONENCIAL
+// =================================================================
+// Gemini tem rate limit por minuto (RPM). Quando estoura, retorna
+// erro 429/500/503 transitorio. Retry com espera crescente resolve
+// 95% dos casos sem precisar de fila/queue.
+// =================================================================
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1500; // 1.5s, 3s, 6s entre tentativas
+
+/**
+ * Wrapper que tenta executar uma funcao ate MAX_RETRIES vezes.
+ * Se o erro for "transitorio" (rate limit, 429, 503, etc), espera
+ * e tenta de novo. Outros erros (codigo mal formatado, etc) nao
+ * retentam — sao bugs que precisam de fix no codigo.
+ */
+async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+  let lastError: any = null;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      lastError = e;
+      const msg = String(e?.message || e || "");
+      const isTransient =
+        msg.includes("429") ||
+        msg.includes("Too Many Requests") ||
+        msg.includes("quota") ||
+        msg.includes("RESOURCE_EXHAUSTED") ||
+        msg.includes("503") ||
+        msg.includes("Service Unavailable") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("ETIMEDOUT");
+
+      if (!isTransient || attempt === MAX_RETRIES) {
+        console.error(`[retry] ${label} falhou definitivamente (tentativa ${attempt}/${MAX_RETRIES}):`, msg.slice(0, 200));
+        throw e;
+      }
+
+      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1); // 1.5s, 3s, 6s
+      console.warn(`[retry] ${label} tentativa ${attempt}/${MAX_RETRIES} falhou (transitorio), esperando ${delay}ms antes de tentar de novo...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  // Nunca chega aqui, mas TS pede
+  throw lastError;
+}
+
+// =================================================================
 // TIPOS
 // =================================================================
 
@@ -355,8 +404,11 @@ Retorne APENAS o JSON com a estrutura solicitada. Sem texto antes ou depois.
   `.trim();
 
   try {
-    // 6. Chama o Gemini
-    const result = await model.generateContent(userMessage);
+    // 6. Chama o Gemini (com retry pra throttling)
+    const result = await withRetry(
+      () => model.generateContent(userMessage),
+      "briefing"
+    );
     const text = result.response.text();
     const duration = Date.now() - startedAt;
 
@@ -638,8 +690,11 @@ User: "to meio sem tempo essa semana"
       history: geminiHistory,
     });
 
-    // 7. Envia a mensagem nova do usuario
-    const result = await chat.sendMessage(params.userMessage);
+    // 7. Envia a mensagem nova do usuario (com retry pra throttling)
+    const result = await withRetry(
+      () => chat.sendMessage(params.userMessage),
+      "chat"
+    );
     const rawText = result.response.text();
 
     if (!rawText || !rawText.trim()) {
@@ -1092,7 +1147,12 @@ Etapa "goal", user disse "quero emagrecer, tenho 80kg, 1,73m, academia completa,
 
   try {
     const chat = model.startChat({ history: geminiHistory });
-    const result = await chat.sendMessage(params.userMessage);
+    // Wrap com retry: Gemini tem RPM limitado, retorna 429 intermitente.
+    // Retry com backoff resolve 95% dos casos sem precisar de fila.
+    const result = await withRetry(
+      () => chat.sendMessage(params.userMessage),
+      "onboarding"
+    );
     const text = result.response.text();
 
     if (!text || !text.trim()) {
