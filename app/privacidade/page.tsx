@@ -43,9 +43,9 @@ export default function PrivacidadePage() {
           <Section title="1. Quem somos (Controlador)">
             <p>
               <strong>Otimize Tecnologia</strong>, pessoa jurídica de direito
-              privado, inscrita no CNPJ sob nº XX.XXX.XXX/0001-XX, com sede em
-              Fortaleza/CE, é a <strong>controladora</strong> dos seus dados
-              pessoais coletados através do Fity AI.
+              privado, com sede em <strong>Fortaleza/CE</strong>, é a{" "}
+              <strong>controladora</strong> dos seus dados pessoais coletados
+              através do Fity AI.
             </p>
             <p>
               Para qualquer dúvida sobre esta Política ou sobre o tratamento dos
