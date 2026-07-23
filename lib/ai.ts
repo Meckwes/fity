@@ -50,6 +50,13 @@ export type UserProfile = {
   activity_level?: ActivityLevel;
   equipment?: string[];
   dietary_restrictions?: string[];
+  // Preferencias alimentares detalhadas (gosta / nao gosta)
+  // Coletado no step 'food_preferences' do onboarding.
+  // Gemini usa pra personalizar os alimentos do briefing diario.
+  food_preferences?: {
+    likes?: string[];
+    dislikes?: string[];
+  };
   meals_per_day?: number;
   workout_days_per_week?: number;
   workout_time?: WorkoutTime;
@@ -306,6 +313,18 @@ export async function generateBriefing(
     ? `\n⚠️ RESTRICOES / PREFERENCIAS APRENDIDAS COM O TEMPO (RESPEITE OBRIGATORIAMENTE):\n${notes.map(n => `- [${n.type}] ${n.note}`).join("\n")}\n`
     : "";
 
+  // Preferencias alimentares detalhadas (gosta / nao gosta)
+  // Quando existem, viram regra OURO pra personalizar os alimentos.
+  const fp = profile.food_preferences;
+  const fpLikes = fp?.likes && fp.likes.length > 0 ? fp.likes.join(", ") : null;
+  const fpDislikes = fp?.dislikes && fp.dislikes.length > 0 ? fp.dislikes.join(", ") : null;
+  const foodPreferencesBlock = (fpLikes || fpDislikes)
+    ? `\n🍽️ PREFERENCIAS ALIMENTARES DO USUARIO (USE OBRIGATORIAMENTE):\n` +
+      (fpLikes ? `- GOSTA MUITO: ${fpLikes}\n` : "") +
+      (fpDislikes ? `- NAO GOSTA / NAO COME: ${fpDislikes}\n` : "") +
+      `==> PRIORIZE alimentos que ele gosta. EVITE alimentos da lista "nao gosta".\n`
+    : "";
+
   const userMessage = `
 Hoje e ${today}.
 
@@ -320,9 +339,17 @@ RESTRICOES ALIMENTARES: ${profile.dietary_restrictions?.join(", ") ?? "nenhuma"}
 REFEICOES POR DIA: ${profile.meals_per_day ?? 4}
 DIAS DE TREINO POR SEMANA: ${profile.workout_days_per_week ?? 3}
 HORARIO PREFERIDO DE TREINO: ${profile.workout_time ?? "tarde"}
-${notesBlock}
+${foodPreferencesBlock}${notesBlock}
 
 LEMBRETE: comida brasileira real (arroz, feijao, frango, ovo, tapioca — NAO sugira salmao nem quinoa importada).
+
+INSTRUCOES DETALHADAS PARA OS ALIMENTOS:
+- O campo "alimentos" de cada refeicao DEVE conter 3-6 itens ESPECIFICOS e REAIS
+- Exemplos bons: "2 ovos mexidos", "1 tapioca media com queijo", "100g de frango grelhado", "1 banana prata", "arroz integral (3 colheres de sopa)", "feijao carioca (1 concha)"
+- Exemplos RUINS: "proteina magra", "carboidrato complexo", "vegetais verdes" (genéricos demais)
+- Se o usuario tem preferencias (acima), PRIORIZE os que ele gosta
+- Se ele NAO gosta de algo, NAO inclua
+- Varie os alimentos entre os dias (evite repetir o mesmo almoco 2 dias seguidos)
 
 Retorne APENAS o JSON com a estrutura solicitada. Sem texto antes ou depois.
   `.trim();
@@ -732,6 +759,8 @@ export const ONBOARDING_STEPS = [
   "height",
   "equipment",
   "restrictions",
+  "food_preferences", // <- NOVO: o que gosta / nao gosta de comer
+  "meals_per_day",    // <- NOVO: quantas refeicoes por dia (3, 4, 5+)
   "workout_time",
   "done",
 ] as const;
@@ -746,6 +775,13 @@ export type OnboardingExtracted = {
   height_cm?: number;
   equipment?: string[];
   dietary_restrictions?: string[];
+  // Preferencias alimentares detalhadas (gosta / nao gosta)
+  food_preferences?: {
+    likes?: string[];
+    dislikes?: string[];
+  };
+  // Quantas refeicoes por dia (3, 4, 5, 6)
+  meals_per_day?: number;
   workout_time?: "manha" | "almoco" | "tarde" | "noite";
 };
 
@@ -829,6 +865,8 @@ export async function generateOnboardingStep(
     height: "ETAPA ATUAL: ALTURA. Extraia a ALTURA em cm (numero). Valores validos: 100 a 250.",
     equipment: "ETAPA ATUAL: EQUIPAMENTO. Extraia o EQUIPAMENTO (array). Valores possiveis: academia, academia_completa, halter, elastico, peso_corporal, barra, maquinas.",
     restrictions: "ETAPA ATUAL: RESTRICOES ALIMENTARES. Extraia RESTRICOES ALIMENTARES (array). Valores possiveis: vegano, vegetariano, sem_gluten, sem_lactose, sem_ovos, nenhuma.",
+    food_preferences: "ETAPA ATUAL: PREFERENCIAS ALIMENTARES (gosta / nao gosta). Faca uma pergunta casual tipo: 'E sobre comida: tem algo que tu AMA comer? E algo que NAO suporta de jeito nenhum? Por exemplo, eu amo tapioca com ovo mas odeio beterraba kkk'. Extraia em extracted.food_preferences: { likes: ['frango', 'ovo', 'tapioca'], dislikes: ['peixe', 'figado', 'beterraba'] }. Listas podem ser vazias se user nao tiver preferencias fortes — NAO invente. Se user falar 'como de tudo', extraia com listas vazias.",
+    meals_per_day: "ETAPA ATUAL: REFEICOES POR DIA. Pergunte casual: 'Quantas refeicoes tu faz por dia? 3, 4, 5+?'. Extraia em extracted.meals_per_day (numero inteiro). Valores validos: 3, 4, 5, 6.",
     workout_time: "ETAPA ATUAL: HORARIO PREFERIDO. Extraia o HORARIO PREFERIDO. Valores validos: manha, almoco, tarde, noite.",
     done: "ETAPA ATUAL: ONBOARDING FINALIZADO. Celebre e diga que o primeiro briefing sera gerado.",
   };

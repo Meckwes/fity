@@ -157,13 +157,65 @@ export async function POST(req: Request) {
           `  onboarding avancado: ${state.step} -> ${saved.newStep} | completed=${saved.completed}`
         );
 
-        // 5.4) UX: se acabou de fechar o onboarding, anexa promessa
-        // explicita do briefing de amanha (mais confiavel que deixar a IA
-        // improvisar "em breve" / "bora comecar")
+        // 5.4) UX: se acabou de fechar o onboarding, monta resumo
+        // do que foi coletado e promete explicitamente o briefing de amanha
         if (saved.completed) {
           const firstName = (user.name || "amigo(a)").split(" ")[0];
-          responseText = `${responseText}\n\n📅 ${firstName}, amanhã às 7h da manhã eu te mando teu primeiro briefing completo (treino + plano alimentar do dia). Fica esperto! 💪`;
-          log("  onboarding COMPLETO — prometeu briefing 7h");
+
+          // Busca o profile completo pra montar o resumo
+          let profileResumo = "";
+          try {
+            const { getUserProfile } = await import("@/lib/profile-store");
+            const p = await getUserProfile(user.id);
+            if (p) {
+              const goalLabel: Record<string, string> = {
+                emagrecer: "emagrecer",
+                "ganhar-massa": "ganhar massa",
+                saude: "saúde",
+                performance: "performance",
+                recomecar: "recomeçar do zero",
+              };
+              const timeLabel: Record<string, string> = {
+                manha: "de manhã",
+                almoco: "no almoço",
+                tarde: "à tarde",
+                noite: "à noite",
+              };
+              const equipLabel = (p.equipment && p.equipment.length > 0)
+                ? p.equipment.join(" + ")
+                : "peso corporal";
+              const restrLabel = (p.dietary_restrictions && p.dietary_restrictions.length > 0)
+                ? p.dietary_restrictions.join(", ")
+                : "sem restrições";
+              const mealsLabel = p.meals_per_day
+                ? `${p.meals_per_day} refeições/dia`
+                : "4 refeições/dia";
+              const daysLabel = p.workout_days_per_week
+                ? `${p.workout_days_per_week}x semana`
+                : "3x semana";
+              const timePrefLabel = p.workout_time ? timeLabel[p.workout_time] : "à tarde";
+
+              // Preferencias alimentares (gosta / nao gosta)
+              const fp = p.food_preferences;
+              const likesLabel = fp?.likes && fp.likes.length > 0 ? fp.likes.join(", ") : null;
+              const dislikesLabel = fp?.dislikes && fp.dislikes.length > 0 ? fp.dislikes.join(", ") : null;
+
+              const lines: string[] = [];
+              lines.push(`🎯 *Objetivo:* ${goalLabel[p.goal] || p.goal}`);
+              if (p.weight_kg) lines.push(`⚖️ *Peso:* ${p.weight_kg}kg`);
+              lines.push(`🏋️ *Treino:* ${daysLabel} ${timePrefLabel}, ${equipLabel}`);
+              lines.push(`🍽️ *Alimentação:* ${mealsLabel}, ${restrLabel}`);
+              if (likesLabel) lines.push(`👍 *Gosta de:* ${likesLabel}`);
+              if (dislikesLabel) lines.push(`👎 *Não come:* ${dislikesLabel}`);
+
+              profileResumo = `\n\n📋 *Resumo do que anotei:*\n${lines.join("\n")}`;
+            }
+          } catch (e) {
+            log("  AVISO ao buscar profile pro resumo:", e);
+          }
+
+          responseText = `${responseText}${profileResumo}\n\n📅 ${firstName}, amanhã às 7h da manhã eu te mando teu primeiro briefing completo (treino + alimentos detalhados do dia). Fica esperto! 💪`;
+          log("  onboarding COMPLETO — resumo + briefing 7h prometido");
         }
       } catch (e) {
         log("  ERRO saveOnboardingStep:", e);

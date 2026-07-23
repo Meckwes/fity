@@ -31,6 +31,7 @@ type ProfileRow = {
   activity_level: string | null;
   equipment: string[] | null;
   dietary_restrictions: string[] | null;
+  food_preferences: { likes?: string[]; dislikes?: string[] } | null;
   meals_per_day: number | null;
   workout_days_per_week: number | null;
   workout_time: string | null;
@@ -87,6 +88,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     activity_level: (p.activity_level as UserProfile["activity_level"]) ?? undefined,
     equipment: p.equipment ?? undefined,
     dietary_restrictions: p.dietary_restrictions ?? undefined,
+    food_preferences: p.food_preferences ?? undefined,
     meals_per_day: p.meals_per_day ?? undefined,
     workout_days_per_week: p.workout_days_per_week ?? undefined,
     workout_time: (p.workout_time as UserProfile["workout_time"]) ?? undefined,

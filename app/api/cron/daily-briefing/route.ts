@@ -75,17 +75,41 @@ function buildProfile(user: any, profile: any): UserProfile {
     goal: profile.goal || "saude",
     weight_kg: Number(profile.current_weight_kg || 0),
     height_cm: profile.height_cm || undefined,
-    // age/sex/activity_level/workout_time nao estao na tabela `profiles` por
+    // age/sex/activity_level nao estao na tabela `profiles` por
     // enquanto — se adicionar la depois, plugar aqui.
     equipment:
       profile.equipment && profile.equipment.length > 0
         ? profile.equipment
         : ["peso corporal"],
     dietary_restrictions: profile.dietary_restrictions || [],
+    // Preferencias alimentares detalhadas (gosta / nao gosta).
+    // Pode ser null em profiles antigos (antes da migration de 2026-07-23).
+    food_preferences: profile.food_preferences || undefined,
     meals_per_day: profile.meals_per_day || undefined,
     workout_days_per_week: profile.workout_days_per_week || undefined,
     adaptation_context: profile.adaptation_context || [],
   };
+}
+
+// Helper: formata UMA refeicao (titulo + lista de alimentos)
+function formatMeal(meal: any, emoji: string, label: string): string {
+  if (!meal) return `${emoji} *${label}*: —`;
+
+  const titulo = meal.titulo || "—";
+  const alimentos: string[] = Array.isArray(meal.alimentos) ? meal.alimentos : [];
+
+  if (alimentos.length === 0) {
+    // Sem alimentos (Gemini falhou nesse campo) — pelo menos mostra o titulo
+    return `${emoji} *${label}*: ${titulo}`;
+  }
+
+  // Formata: titulo em negrito, depois lista de alimentos com bullets
+  const itens = alimentos
+    .filter((a) => a && typeof a === "string" && a.trim().length > 0)
+    .map((a) => `  • ${a.trim()}`)
+    .join("\n");
+
+  return `${emoji} *${label}*: ${titulo}\n${itens}`;
 }
 
 // Helper: formata briefing JSON como texto do WhatsApp
@@ -118,18 +142,17 @@ function formatBriefingAsText(
           .join("\n")
       : "_exercicios nao gerados_";
 
-  // Refeicoes (cada uma pode estar faltando)
+  // Refeicoes — agora mostra TITULO + ALIMENTOS detalhados (3-6 itens por refeicao)
   const ref = b?.refeicoes || {};
   const refeicoes = [
-    ref.cafe_da_manha
-      ? `🍳 *Café*: ${ref.cafe_da_manha.titulo || "—"}`
-      : "🍳 *Café*: —",
-    ref.almoco ? `🍽️ *Almoço*: ${ref.almoco.titulo || "—"}` : "🍽️ *Almoço*: —",
-    ref.lanche ? `🥪 *Lanche*: ${ref.lanche.titulo || "—"}` : null,
-    ref.jantar ? `🍽️ *Jantar*: ${ref.jantar.titulo || "—"}` : "🍽️ *Jantar*: —",
+    formatMeal(ref.cafe_da_manha, "🍳", "Café"),
+    formatMeal(ref.almoco, "🍽️", "Almoço"),
+    // Lanche so aparece se Gemini mandou (comida de 3 refeicoes nao tem lanche)
+    ref.lanche ? formatMeal(ref.lanche, "🥪", "Lanche") : null,
+    formatMeal(ref.jantar, "🍽️", "Jantar"),
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("\n\n");
 
   const agua = b?.meta_agua_litros ?? 2;
   const dica = b?.dica_do_dia || "Bebe agua e faz o basico que da certo.";

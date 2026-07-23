@@ -60,7 +60,7 @@ export async function getOnboardingState(userId: string): Promise<OnboardingStat
   // 2) Pega dados ja coletados no profile (se existir)
   const { data: profileData, error: profileErr } = await supabaseAdmin
     .from("profiles")
-    .select("goal, current_weight_kg, height_cm, equipment, dietary_restrictions, workout_time")
+    .select("goal, current_weight_kg, height_cm, equipment, dietary_restrictions, food_preferences, meals_per_day, workout_time")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -75,6 +75,8 @@ export async function getOnboardingState(userId: string): Promise<OnboardingStat
     if (profileData.height_cm) collectedData.height_cm = Number(profileData.height_cm);
     if (profileData.equipment) collectedData.equipment = profileData.equipment;
     if (profileData.dietary_restrictions) collectedData.dietary_restrictions = profileData.dietary_restrictions;
+    if (profileData.food_preferences) collectedData.food_preferences = profileData.food_preferences as OnboardingExtracted["food_preferences"];
+    if (profileData.meals_per_day) collectedData.meals_per_day = Number(profileData.meals_per_day);
     if (profileData.workout_time) collectedData.workout_time = profileData.workout_time as OnboardingExtracted["workout_time"];
   }
 
@@ -111,6 +113,20 @@ export async function saveOnboardingStep(
     if (extracted.height_cm !== undefined) profileUpdate.height_cm = extracted.height_cm;
     if (extracted.equipment) profileUpdate.equipment = extracted.equipment;
     if (extracted.dietary_restrictions) profileUpdate.dietary_restrictions = extracted.dietary_restrictions;
+    // food_preferences: salva o objeto completo (likes + dislikes)
+    // so sobrescreve se vier dados novos nesta etapa
+    if (extracted.food_preferences) {
+      const fp = extracted.food_preferences;
+      const hasContent =
+        (fp.likes && fp.likes.length > 0) ||
+        (fp.dislikes && fp.dislikes.length > 0);
+      if (hasContent) {
+        profileUpdate.food_preferences = fp;
+      }
+    }
+    if (extracted.meals_per_day !== undefined && extracted.meals_per_day > 0) {
+      profileUpdate.meals_per_day = extracted.meals_per_day;
+    }
     if (extracted.workout_time) profileUpdate.workout_time = extracted.workout_time;
   }
 
