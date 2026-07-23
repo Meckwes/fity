@@ -21,14 +21,16 @@ export default function Footer() {
           {/* Coluna 1: marca + tagline */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center font-bold text-lg">
-                F
-              </div>
+              <img
+                src="/fity-logo.png"
+                alt="Fity AI"
+                className="h-10 w-10"
+              />
               <span className="font-extrabold text-xl">Fity AI</span>
             </div>
             <p className="text-sm text-white/60 leading-relaxed">
-              O assistente que decide por você: o que comer, o que treinar,
-              e o que comprar. Todo dia, no WhatsApp.
+              Seu assistente diário de evolução: exercícios, refeições e
+              compras organizados para você no WhatsApp.
             </p>
           </div>
 
