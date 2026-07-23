@@ -663,16 +663,33 @@ User: "to meio sem tempo essa semana"
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        // Gemini nao retornou JSON valido - devolve como texto puro mesmo
-        console.warn("[chat] Gemini nao retornou JSON, devolvendo texto puro");
-        return {
-          ok: true,
-          reply: rawText.trim(),
-          feedback_detected: false,
-          feedback_items: [],
-          raw: rawText,
-          duration_ms: Date.now() - startedAt,
-        };
+        // Ultima tentativa: extrai o PRIMEIRO objeto JSON valido do texto
+        // (Gemini as vezes retorna JSON embedded em explicacao)
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            parsed = JSON.parse(jsonMatch[0]);
+          } catch {
+            // Realmente deu merda - loga e cai no fallback abaixo
+          }
+        }
+
+        if (!parsed) {
+          // Gemini retornou lixo. NAO manda o JSON cru pro user (UX horrivel).
+          // Manda uma msg generica e loga o problema pra debug.
+          console.error(
+            "[chat] Gemini retornou resposta que nao da pra parsear. raw:",
+            rawText.slice(0, 300)
+          );
+          return {
+            ok: true,
+            reply: "Pô, travei aqui rapidinho 😅 pode repetir o que tu falou?",
+            feedback_detected: false,
+            feedback_items: [],
+            raw: rawText,
+            duration_ms: Date.now() - startedAt,
+          };
+        }
       }
     }
 
