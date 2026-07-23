@@ -87,17 +87,18 @@ export async function getOrCreateUserByLid(
   // 2. Nao existe - cria com trial_started_at = NOW()
   log("criando novo usuario pra LID:", lid, "nome:", name);
 
-  // Tenta extrair telefone do LID (se for tudo digito, BR format)
-  // Ex: "187178986528995@lid" -> phone = "55187178986528995" (nao ideal mas serve)
+  // Tenta extrair telefone do LID (SE e somente SE parecer BR: 55 + DDD + 9).
+  // O LID em si (ex: "187178986528995@lid") NAO eh um numero de telefone,
+  // eh um identificador interno do Zap. Salvar os digitos dele como phone
+  // polui a tabela e quebra o envio de mensagens depois.
+  // Por isso: so extrai se tiver 12-13 digitos E comecar com 55.
   const lidDigits = lid.replace(/\D/g, "");
   let phoneFallback: string | null = null;
-  if (lidDigits.length >= 10) {
-    // Se comecar com 55, usa direto. Se nao, prepende.
-    if (lidDigits.startsWith("55")) {
-      phoneFallback = "55" + lidDigits.slice(2); // remove o "55" do LID se tiver
-    } else {
-      phoneFallback = lidDigits;
-    }
+  if (lidDigits.length >= 12 && lidDigits.length <= 13 && lidDigits.startsWith("55")) {
+    phoneFallback = lidDigits;
+    log("  phone extraido do LID (BR format):", phoneFallback);
+  } else {
+    log(`  LID ${lid} nao parece BR phone (${lidDigits.length} digitos, prefixo "${lidDigits.slice(0, 2)}") - phone fica null`);
   }
 
   const now = new Date().toISOString();
