@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+// Forca rota a ser dinamica (roda em runtime, NAO em build time).
+// Sem isso, o Next.js tenta "pre-renderizar" a rota durante o build,
+// o que falha porque as env vars do Supabase nao estao acessiveis
+// em build time. Ver erro de deploy "faltam NEXT_PUBLIC_SUPABASE_URL".
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 // =================================================================
 // FITY — Admin: lista leads + customers (vendas) + conversas
 // =================================================================
