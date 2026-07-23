@@ -26,7 +26,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { sendTextMessage, sendTemplateMessage } from "@/lib/whatsapp";
-import { getActiveSubscribers } from "@/lib/subscription";
+import { getEligibleBriefingRecipients } from "@/lib/subscription";
 import {
   generateBriefing,
   type UserProfile,
@@ -169,29 +169,29 @@ export async function GET(req: Request) {
 
   try {
     // =================================================================
-    // 1. BUSCA SUBSCRIBERS ATIVOS
-    // (getActiveSubscribers ja filtra: status='captured' AND expires_at > now)
+    // 1. BUSCA RECIPIENTS ELEGIVEIS (B+7.1)
+    // (getEligibleBriefingRecipients une pagos + trial users em trial)
     // =================================================================
-    const subscribers = await getActiveSubscribers();
-    stats.total_active = subscribers.length;
+    const recipients = await getEligibleBriefingRecipients();
+    stats.total_active = recipients.length;
     console.log(
-      `[briefing-orchestrator] ${stats.total_active} subscriber(s) ativo(s)`
+      `[briefing-orchestrator] ${stats.total_active} recipient(s) elegivel(is)`
     );
 
-    if (subscribers.length === 0) {
+    if (recipients.length === 0) {
       return NextResponse.json({
         ok: true,
-        message: "Nenhum subscriber ativo. Nada a fazer.",
+        message: "Nenhum recipient elegivel. Nada a fazer.",
         ...stats,
         duration_ms: Date.now() - startedAt,
       });
     }
 
     // Aplica limite pra evitar timeout
-    const queue = subscribers.slice(0, MAX_USERS_PER_RUN);
-    if (queue.length < subscribers.length) {
+    const queue = recipients.slice(0, MAX_USERS_PER_RUN);
+    if (queue.length < recipients.length) {
       console.log(
-        `[briefing-orchestrator] processando ${queue.length} de ${subscribers.length} (restante na proxima execucao)`
+        `[briefing-orchestrator] processando ${queue.length} de ${recipients.length} (restante na proxima execucao)`
       );
     }
 
@@ -199,28 +199,29 @@ export async function GET(req: Request) {
     // 2. PRA CADA SUBSCRIBER: gera + envia briefing
     // Serial pra nao estourar rate limit do Gemini
     // =================================================================
-    for (const sub of queue) {
+    for (const recipient of queue) {
       stats.processed++;
-      const phone = sub.customer_phone;
+      const phone = recipient.phone;
+      const recipientName = recipient.name;
 
       try {
         if (!phone) {
           stats.skipped++;
-          stats.errors.push(`no_phone: ${sub.customer_email}`);
+          stats.errors.push(`no_phone: ${recipient.user_id}`);
           continue;
         }
 
-        // 2a. Busca user completo na tabela `users`
+        // 2a. Busca user completo na tabela `users` (ja temos user_id do recipient)
         const { data: user, error: userErr } = await supabaseAdmin
           .from("users")
           .select("*")
-          .eq("phone", phone)
+          .eq("id", recipient.user_id)
           .maybeSingle();
 
         if (userErr || !user) {
           stats.skipped++;
           stats.errors.push(
-            `user_not_found: ${phone} (${userErr?.message || "no row"})`
+            `user_not_found: ${phone} (id=${recipient.user_id}, ${userErr?.message || "no row"})`
           );
           continue;
         }
@@ -277,20 +278,20 @@ export async function GET(req: Request) {
         }
         stats.generated++;
         console.log(
-          `[briefing-orchestrator] briefing gerado pra ${phone} em ${result.duration_ms}ms`
+          `[briefing-orchestrator] briefing gerado pra ${phone} (${recipient.source}) em ${result.duration_ms}ms`
         );
 
         // 2e. Formata texto + envia
         const briefingText = formatBriefingAsText(
           result.briefing,
-          sub.customer_name
+          recipientName
         );
 
         // Tenta texto livre primeiro (funciona se user falou nas ultimas 24h)
         // IMPORTANTE: sendTextMessage NAO joga excecao — retorna { ok, error }.
         // O try/catch anterior era armadilha: nunca pegava nada e marcava
         // sent_text++ mesmo em falha. Agora checa result.ok.
-        const firstName = sub.customer_name.split(" ")[0];
+        const firstName = (recipientName || "amigo(a)").split(" ")[0];
         const textResult = await sendTextMessage(phone, briefingText);
 
         if (textResult.ok) {

@@ -156,6 +156,15 @@ export async function POST(req: Request) {
         log(
           `  onboarding avancado: ${state.step} -> ${saved.newStep} | completed=${saved.completed}`
         );
+
+        // 5.4) UX: se acabou de fechar o onboarding, anexa promessa
+        // explicita do briefing de amanha (mais confiavel que deixar a IA
+        // improvisar "em breve" / "bora comecar")
+        if (saved.completed) {
+          const firstName = (user.name || "amigo(a)").split(" ")[0];
+          responseText = `${responseText}\n\n📅 ${firstName}, amanhã às 7h da manhã eu te mando teu primeiro briefing completo (treino + plano alimentar do dia). Fica esperto! 💪`;
+          log("  onboarding COMPLETO — prometeu briefing 7h");
+        }
       } catch (e) {
         log("  ERRO saveOnboardingStep:", e);
       }
