@@ -160,7 +160,13 @@ export async function POST(req: Request) {
         // 5.4) UX: se acabou de fechar o onboarding, monta resumo
         // do que foi coletado e promete explicitamente o briefing de amanha
         if (saved.completed) {
-          const firstName = (user.name || "amigo(a)").split(" ")[0];
+          // Primeiro tenta usar o nome real; senao cai pro placeholder
+          // do WhatsApp push name; senao "amigo(a)" generico.
+          // Pega o nome MAIS RECENTE do user (caso a IA extraiu nome
+          // novo durante o onboarding).
+          const firstName = (user.name && user.name !== "Usuario sem nome" && user.name !== ".")
+            ? user.name.split(" ")[0]
+            : "amigo(a)";
 
           // Busca o profile completo pra montar o resumo
           let profileResumo = "";
@@ -196,6 +202,8 @@ export async function POST(req: Request) {
               const timePrefLabel = p.workout_time ? timeLabel[p.workout_time] : "à tarde";
 
               // Preferencias alimentares (gosta / nao gosta)
+              // IMPORTANTE: listar SEPARADO, com label claro (GOSTA vs NAO GOSTA)
+              // pra nao confundir com "comidas que come"
               const fp = p.food_preferences;
               const likesLabel = fp?.likes && fp.likes.length > 0 ? fp.likes.join(", ") : null;
               const dislikesLabel = fp?.dislikes && fp.dislikes.length > 0 ? fp.dislikes.join(", ") : null;
@@ -206,7 +214,10 @@ export async function POST(req: Request) {
               lines.push(`🏋️ *Treino:* ${daysLabel} ${timePrefLabel}, ${equipLabel}`);
               lines.push(`🍽️ *Alimentação:* ${mealsLabel}, ${restrLabel}`);
               if (likesLabel) lines.push(`👍 *Gosta de:* ${likesLabel}`);
-              if (dislikesLabel) lines.push(`👎 *Não come:* ${dislikesLabel}`);
+              if (dislikesLabel) lines.push(`👎 *Evita:* ${dislikesLabel}`);
+              if (likesLabel || dislikesLabel) {
+                lines.push(`💡 *Briefing vai priorizar o que gosta e evitar o que não come*`);
+              }
 
               profileResumo = `\n\n📋 *Resumo do que anotei:*\n${lines.join("\n")}`;
             }
@@ -214,7 +225,7 @@ export async function POST(req: Request) {
             log("  AVISO ao buscar profile pro resumo:", e);
           }
 
-          responseText = `${responseText}${profileResumo}\n\n📅 ${firstName}, amanhã às 7h da manhã eu te mando teu primeiro briefing completo (treino + alimentos detalhados do dia). Fica esperto! 💪`;
+          responseText = `${responseText}${profileResumo}\n\n📅 ${firstName}, amanhã às 7h da manhã eu te mando teu primeiro briefing completo (treino + alimentos detalhados do dia). Fica ligado(a)! 💪`;
           log("  onboarding COMPLETO — resumo + briefing 7h prometido");
         }
       } catch (e) {
