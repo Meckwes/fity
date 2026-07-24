@@ -32,14 +32,62 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
+// Helper: manda msg de boas-vindas pro Zap do user
+async function sendWhatsappWelcome(userId: string) {
+  try {
+    // Busca o user pra pegar o phone e o name atualizados
+    const { data: user } = await supabaseAdmin
+      .from("users")
+      .select("name, phone")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!user) return;
+    if (!user.phone) {
+      console.log(`[stripe-webhook] user ${userId} sem phone, skip welcome msg`);
+      return;
+    }
+
+    const firstName = (user.name || "amigo(a)").split(" ")[0];
+    const message =
+      `E aí, ${firstName}! 🎉 Bem-vindo ao Fity AI.\n\n` +
+      `Tô te chamando todo dia às 7h com seu briefing personalizado de treino e alimentação.\n\n` +
+      `Manda um "oi" pra começar!`;
+
+    const botUrl = process.env.WHATSAPP_BOT_URL;
+    const botKey = process.env.WHATSAPP_BOT_API_KEY;
+    if (!botUrl || !botKey) {
+      console.warn("[stripe-webhook] bot nao configurado, skip welcome msg");
+      return;
+    }
+
+    const res = await fetch(`${botUrl}/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${botKey}`,
+      },
+      body: JSON.stringify({ phone: user.phone, message }),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (res.ok) {
+      console.log(`[stripe-webhook] welcome msg enviada pra ${user.phone} (user ${userId})`);
+    } else {
+      console.error(`[stripe-webhook] erro enviando welcome msg: ${res.status} ${JSON.stringify(result)}`);
+    }
+  } catch (err) {
+    console.error(`[stripe-webhook] erro inesperado no welcome: ${err}`);
+  }
+}
+
 // Helper: acha o user por id, customer_id, email, ou cria um novo
 async function findOrCreateUser(opts: {
   userId?: string | null;
   stripeCustomerId?: string | null;
   email?: string | null;
   name?: string | null;
+  phone?: string | null;
 }): Promise<string | null> {
-  const { userId, stripeCustomerId, email, name } = opts;
+  const { userId, stripeCustomerId, email, name, phone } = opts;
 
   // 1) tenta por id (metadata.userId)
   if (userId) {
@@ -77,6 +125,7 @@ async function findOrCreateUser(opts: {
       .insert({
         email,
         name: name || email.split("@")[0],
+        phone: phone || null, // Zap do user (preenchido no form)
         onboarding_completed: false,
         active: true,
       })
@@ -134,7 +183,8 @@ export async function POST(req: Request) {
           userId: session.metadata?.userId,
           stripeCustomerId: customerId,
           email: session.customer_email || session.customer_details?.email,
-          name: session.customer_details?.name,
+          name: session.customer_details?.name || session.metadata?.name,
+          phone: session.metadata?.phone,
         });
 
         if (userId && customerId) {
@@ -148,6 +198,8 @@ export async function POST(req: Request) {
             })
             .eq("id", userId);
           console.log(`[stripe-webhook] user ${userId} subscribed (plan: ${session.metadata?.plan}, customer: ${customerId})`);
+          // Manda msg de boas-vindas no Zap do user (fire-and-forget)
+          await sendWhatsappWelcome(userId);
         } else {
           console.warn(`[stripe-webhook] checkout sem user resolvido: userId=${userId} customerId=${customerId}`);
         }

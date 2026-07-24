@@ -27,7 +27,9 @@ const PRICE_IDS: Record<string, string | undefined> = {
 
 export async function POST(req: Request) {
   try {
-    const { plan, email, name, userId, cpf } = await req.json();
+    const { plan, email, name, userId, cpf, phone } = await req.json();
+    // Limpa o phone pra ficar só numeros (ex: 5585998022352)
+    const phoneClean = (phone || "").replace(/\D/g, "");
 
     const priceId = PRICE_IDS[plan];
     if (!priceId) {
@@ -59,6 +61,7 @@ export async function POST(req: Request) {
         userId: userId || "",
         email: email || "",
         name: name || "",
+        phone: phoneClean,
         plan,
         cpf: cpf || "",
       },
@@ -69,6 +72,7 @@ export async function POST(req: Request) {
           userId: userId || "",
           email: email || "",
           name: name || "",
+          phone: phoneClean,
           plan,
           cpf: cpf || "",
         },

@@ -183,6 +183,7 @@ function CheckoutContent() {
           plan: planId,
           email,
           name,
+          phone,
           cpf,
           // userId seria o id do user no Supabase se ele ja tiver
           // (quando vem do Zap depois de onboarded). Por enquanto vem vazio.
