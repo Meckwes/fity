@@ -41,17 +41,20 @@ async function sendWhatsappWelcome(userId: string) {
       .select("name, phone")
       .eq("id", userId)
       .maybeSingle();
-    if (!user) return;
+    if (!user) {
+      console.warn(`[stripe-webhook] user ${userId} nao encontrado no Supabase`);
+      return;
+    }
     if (!user.phone) {
-      console.log(`[stripe-webhook] user ${userId} sem phone, skip welcome msg`);
+      console.warn(`[stripe-webhook] user ${userId} (${user.name || "sem nome"}) sem phone, skip welcome msg`);
       return;
     }
 
     const firstName = (user.name || "amigo(a)").split(" ")[0];
     const message =
-      `E aí, ${firstName}! 🎉 Bem-vindo ao Fity AI.\n\n` +
-      `Tô te chamando todo dia às 7h com seu briefing personalizado de treino e alimentação.\n\n` +
-      `Manda um "oi" pra começar!`;
+      `E aí, ${firstName}! 🎉 Seja muito bem-vindo ao Fity AI.\n\n` +
+      `A partir de amanhã, todos os dias às 7h, você vai receber seu briefing personalizado com treino, alimentação e orientações para manter sua evolução.\n\n` +
+      `Seu roteiro, Sua Evolução começa agora. 💚`;
 
     const botUrl = process.env.WHATSAPP_BOT_URL;
     const botKey = process.env.WHATSAPP_BOT_API_KEY;
@@ -79,7 +82,7 @@ async function sendWhatsappWelcome(userId: string) {
   }
 }
 
-// Helper: acha o user por id, customer_id, email, ou cria um novo
+// Helper: acha o user por id, customer_id, email, phone, ou cria um novo
 async function findOrCreateUser(opts: {
   userId?: string | null;
   stripeCustomerId?: string | null;
@@ -118,25 +121,56 @@ async function findOrCreateUser(opts: {
       .eq("email", email)
       .maybeSingle();
     if (data) return data.id;
+  }
 
-    // 4) nao existe -> cria
+  // 4) tenta por phone (cobre caso do mesmo Zap checkoutar 2x com emails
+  //    diferentes — o users.phone é UNIQUE, entao a gente assume que é o
+  //    mesmo user e faz merge)
+  if (phone) {
+    const { data } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (data) {
+      console.log(`[stripe-webhook] user encontrado por phone: ${data.id} (phone ${phone}, email ${email || "(novo)"})`);
+      return data.id;
+    }
+  }
+
+  // 5) nao existe -> cria (pode falhar se phone ja existir — a gente loga
+  //    o erro, mas tenta de novo via update pelo phone)
+  if (email || phone) {
     const { data: created, error } = await supabaseAdmin
       .from("users")
       .insert({
-        email,
-        name: name || email.split("@")[0],
-        phone: phone || null, // Zap do user (preenchido no form)
+        email: email || null,
+        name: name || (email ? email.split("@")[0] : "Usuario sem nome"),
+        phone: phone || null,
         onboarding_completed: false,
         active: true,
       })
       .select("id")
       .single();
     if (!error && created) {
-      console.log(`[stripe-webhook] user criado por email: ${created.id} (${email})`);
+      console.log(`[stripe-webhook] user criado: ${created.id} (${email || phone})`);
       return created.id;
     }
     if (error) {
       console.error(`[stripe-webhook] erro criando user: ${error.message}`);
+      // Se falhou por unique constraint no phone, tenta achar o user
+      // existente e fazer merge
+      if (phone && error.message.includes("users_phone_key")) {
+        const { data: existing } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("phone", phone)
+          .maybeSingle();
+        if (existing) {
+          console.log(`[stripe-webhook] merge via phone apos unique constraint: ${existing.id}`);
+          return existing.id;
+        }
+      }
     }
   }
 
@@ -178,13 +212,15 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+        const sessionPhone = session.metadata?.phone;
+        const sessionName = session.customer_details?.name || session.metadata?.name;
 
         const userId = await findOrCreateUser({
           userId: session.metadata?.userId,
           stripeCustomerId: customerId,
           email: session.customer_email || session.customer_details?.email,
-          name: session.customer_details?.name || session.metadata?.name,
-          phone: session.metadata?.phone,
+          name: sessionName,
+          phone: sessionPhone,
         });
 
         if (userId && customerId) {
@@ -195,10 +231,14 @@ export async function POST(req: Request) {
               stripe_subscription_id: subscriptionId,
               subscription_status: "active",
               subscription_plan: session.metadata?.plan,
+              // Sempre atualiza phone/name se metadata tiver (corrige race condition
+              // onde o customer.subscription.created cria o user antes do phone)
+              ...(sessionPhone ? { phone: sessionPhone } : {}),
+              ...(sessionName ? { name: sessionName } : {}),
             })
             .eq("id", userId);
-          console.log(`[stripe-webhook] user ${userId} subscribed (plan: ${session.metadata?.plan}, customer: ${customerId})`);
-          // Manda msg de boas-vindas no Zap do user (fire-and-forget)
+          console.log(`[stripe-webhook] user ${userId} subscribed (plan: ${session.metadata?.plan}, customer: ${customerId}, phone: ${sessionPhone || "(vazio)"})`);
+          // Manda msg de boas-vindas no Zap do user
           await sendWhatsappWelcome(userId);
         } else {
           console.warn(`[stripe-webhook] checkout sem user resolvido: userId=${userId} customerId=${customerId}`);
@@ -210,12 +250,14 @@ export async function POST(req: Request) {
       case "customer.subscription.created": {
         const sub = event.data.object as Stripe.Subscription;
         const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+        const subPhone = sub.metadata?.phone;
 
         const userId = await findOrCreateUser({
           userId: sub.metadata?.userId,
           stripeCustomerId: customerId,
           email: sub.metadata?.email,
           name: sub.metadata?.name,
+          phone: subPhone,
         });
 
         if (userId) {
@@ -228,9 +270,12 @@ export async function POST(req: Request) {
               stripe_customer_id: customerId,
               subscription_status: sub.status, // active, trialing, past_due, canceled, etc
               ...(periodEnd ? { subscription_current_period_end: new Date(periodEnd * 1000).toISOString() } : {}),
+              // Se veio phone na metadata, atualiza (cobre caso do user ter sido
+              // criado sem phone, antes do checkout.session.completed chegar)
+              ...(subPhone ? { phone: subPhone } : {}),
             })
             .eq("id", userId);
-          console.log(`[stripe-webhook] sub ${sub.id} -> ${sub.status} (user ${userId})`);
+          console.log(`[stripe-webhook] sub ${sub.id} -> ${sub.status} (user ${userId}, phone: ${subPhone || "(vazio)"})`);
         } else {
           console.warn(`[stripe-webhook] subscription event sem user resolvido: sub=${sub.id} customer=${customerId}`);
         }
@@ -246,6 +291,7 @@ export async function POST(req: Request) {
           stripeCustomerId: customerId,
           email: sub.metadata?.email,
           name: sub.metadata?.name,
+          phone: sub.metadata?.phone,
         });
 
         if (userId) {

@@ -200,10 +200,10 @@ function SuccessContent() {
               3
             </span>
             <span className="flex items-center gap-1.5">
-              <Calendar size={12} className="inline" />
               <span>
                 <strong>Amanhã 7h</strong> — Primeiro briefing diário no Zap ☀️
               </span>
+              <Calendar size={12} className="inline" />
             </span>
           </li>
         </ol>
