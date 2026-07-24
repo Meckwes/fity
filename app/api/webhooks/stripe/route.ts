@@ -84,11 +84,14 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription;
         const userId = sub.metadata?.userId;
         if (userId) {
+          // current_period_end mudou de lugar nas versoes mais novas do SDK
+          // (agora tá em items.data[0] em vez do root)
+          const periodEnd = (sub as any).current_period_end ?? sub.items?.data?.[0]?.current_period_end;
           await supabaseAdmin
             .from("users")
             .update({
               subscription_status: sub.status, // active, trialing, past_due, canceled, etc
-              subscription_current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+              ...(periodEnd ? { subscription_current_period_end: new Date(periodEnd * 1000).toISOString() } : {}),
             })
             .eq("id", userId);
           console.log(`[stripe-webhook] sub ${sub.id} -> ${sub.status} (user ${userId})`);
