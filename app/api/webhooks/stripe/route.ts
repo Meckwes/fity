@@ -7,11 +7,17 @@
 // e atualiza o user no Supabase.
 //
 // COMO CONFIGURAR:
-// 1. Stripe Dashboard -> Developers -> Webhooks -> Add endpoint
+// 1. Stripe Dashboard -> Workbench -> Webhooks -> Add destination
 // 2. URL: https://fityai.vercel.app/api/webhooks/stripe
-// 3. Eventos: checkout.session.completed, customer.subscription.updated,
-//             customer.subscription.deleted, invoice.paid
+// 3. Eventos: checkout.session.completed, customer.subscription.created,
+//             customer.subscription.updated, customer.subscription.deleted
 // 4. Copia o "Signing secret" e adiciona no .env.local como STRIPE_WEBHOOK_SECRET
+//
+// COMPORTAMENTO:
+// - Se o checkout session tiver metadata.userId preenchido (veio do Zap
+//   com user ja onboarded) -> atualiza direto por id.
+// - Se nao tiver (veio do checkout do site, sem user) -> procura o user
+//   por email no Supabase. Se nao existir, cria um novo.
 // =================================================================
 
 import { NextResponse } from "next/server";
@@ -25,6 +31,68 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+// Helper: acha o user por id, customer_id, email, ou cria um novo
+async function findOrCreateUser(opts: {
+  userId?: string | null;
+  stripeCustomerId?: string | null;
+  email?: string | null;
+  name?: string | null;
+}): Promise<string | null> {
+  const { userId, stripeCustomerId, email, name } = opts;
+
+  // 1) tenta por id (metadata.userId)
+  if (userId) {
+    const { data } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (data) return data.id;
+  }
+
+  // 2) tenta por stripe_customer_id (cobre o caso de eventos de subscription
+  //    que vem depois do checkout.session.completed, que JÁ salvou o customer_id)
+  if (stripeCustomerId) {
+    const { data } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("stripe_customer_id", stripeCustomerId)
+      .maybeSingle();
+    if (data) return data.id;
+  }
+
+  // 3) tenta por email (cobre caso do checkout do site sem userId)
+  if (email) {
+    const { data } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+    if (data) return data.id;
+
+    // 4) nao existe -> cria
+    const { data: created, error } = await supabaseAdmin
+      .from("users")
+      .insert({
+        email,
+        name: name || email.split("@")[0],
+        onboarding_completed: false,
+        active: true,
+      })
+      .select("id")
+      .single();
+    if (!error && created) {
+      console.log(`[stripe-webhook] user criado por email: ${created.id} (${email})`);
+      return created.id;
+    }
+    if (error) {
+      console.error(`[stripe-webhook] erro criando user: ${error.message}`);
+    }
+  }
+
+  return null;
+}
 
 export async function POST(req: Request) {
   if (!webhookSecret || webhookSecret === "PLACEHOLDER_VOUROPDAR_DEPOIS") {
@@ -59,12 +127,17 @@ export async function POST(req: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        const userId = session.metadata?.userId;
         const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
 
+        const userId = await findOrCreateUser({
+          userId: session.metadata?.userId,
+          stripeCustomerId: customerId,
+          email: session.customer_email || session.customer_details?.email,
+          name: session.customer_details?.name,
+        });
+
         if (userId && customerId) {
-          // Marca user como subscribed no Supabase
           await supabaseAdmin
             .from("users")
             .update({
@@ -74,7 +147,9 @@ export async function POST(req: Request) {
               subscription_plan: session.metadata?.plan,
             })
             .eq("id", userId);
-          console.log(`[stripe-webhook] user ${userId} subscribed (plan: ${session.metadata?.plan})`);
+          console.log(`[stripe-webhook] user ${userId} subscribed (plan: ${session.metadata?.plan}, customer: ${customerId})`);
+        } else {
+          console.warn(`[stripe-webhook] checkout sem user resolvido: userId=${userId} customerId=${customerId}`);
         }
         break;
       }
@@ -82,26 +157,45 @@ export async function POST(req: Request) {
       case "customer.subscription.updated":
       case "customer.subscription.created": {
         const sub = event.data.object as Stripe.Subscription;
-        const userId = sub.metadata?.userId;
+        const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+
+        const userId = await findOrCreateUser({
+          userId: sub.metadata?.userId,
+          stripeCustomerId: customerId,
+          email: sub.metadata?.email,
+          name: sub.metadata?.name,
+        });
+
         if (userId) {
           // current_period_end mudou de lugar nas versoes mais novas do SDK
-          // (agora tá em items.data[0] em vez do root)
+          // (agora ta em items.data[0] em vez do root)
           const periodEnd = (sub as any).current_period_end ?? sub.items?.data?.[0]?.current_period_end;
           await supabaseAdmin
             .from("users")
             .update({
+              stripe_customer_id: customerId,
               subscription_status: sub.status, // active, trialing, past_due, canceled, etc
               ...(periodEnd ? { subscription_current_period_end: new Date(periodEnd * 1000).toISOString() } : {}),
             })
             .eq("id", userId);
           console.log(`[stripe-webhook] sub ${sub.id} -> ${sub.status} (user ${userId})`);
+        } else {
+          console.warn(`[stripe-webhook] subscription event sem user resolvido: sub=${sub.id} customer=${customerId}`);
         }
         break;
       }
 
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
-        const userId = sub.metadata?.userId;
+        const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+
+        const userId = await findOrCreateUser({
+          userId: sub.metadata?.userId,
+          stripeCustomerId: customerId,
+          email: sub.metadata?.email,
+          name: sub.metadata?.name,
+        });
+
         if (userId) {
           await supabaseAdmin
             .from("users")

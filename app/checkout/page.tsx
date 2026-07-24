@@ -18,8 +18,9 @@ import {
   Phone,
   IdCard,
   Pencil,
+  Loader2,
 } from "lucide-react";
-import { PaymentForm } from "./components/PaymentForm";
+// import { PaymentForm } from "./components/PaymentForm";  // LEGADO MP
 
 // =================================================================
 // FITY — Página de Checkout com Stepper (2 etapas)
@@ -159,6 +160,7 @@ function CheckoutContent() {
   // Estados do pagamento
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [acceptedTrial, setAcceptedTrial] = useState(false);
 
   // Avanca pro step 2 (validacao feita no handleContinuar)
   function goToPayment() {
@@ -166,7 +168,7 @@ function CheckoutContent() {
   }
 
   // ===================================================================
-  // STRIPE CHECKOUT: redireciona o user pra o checkout hospedado do Stripe
+  // STRIPE CHECKOUT: redireciona o user pro checkout hospedado do Stripe
   // (substitui o MP direto — Stripe Checkout é mais bonito, mais seguro,
   //  e ja vem com trial de 7 dias configurado no price)
   // ===================================================================
@@ -181,6 +183,7 @@ function CheckoutContent() {
           plan: planId,
           email,
           name,
+          cpf,
           // userId seria o id do user no Supabase se ele ja tiver
           // (quando vem do Zap depois de onboarded). Por enquanto vem vazio.
           userId: "",
@@ -224,6 +227,10 @@ function CheckoutContent() {
     }
     if (!isCpfValid) {
       setError("CPF inválido (precisa ter 11 dígitos)");
+      return;
+    }
+    if (!acceptedTrial) {
+      setError("Confirme que voc\u00ea entende o trial de 7 dias");
       return;
     }
 
@@ -414,9 +421,44 @@ function CheckoutContent() {
                       </div>
                     )}
 
+                    <label className="flex items-start gap-2.5 p-3 rounded-xl border-2 border-amber-300 bg-amber-50/30 cursor-pointer select-none transition hover:border-amber-400">
+                      <div className="relative mt-0.5 shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={acceptedTrial}
+                          onChange={(e) => setAcceptedTrial(e.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
+                            acceptedTrial
+                              ? "bg-amber-500 border-amber-500"
+                              : "bg-white border-amber-500"
+                          }`}
+                        >
+                          <Check
+                            size={14}
+                            className={`text-white transition-opacity ${
+                              acceptedTrial ? "opacity-100" : "opacity-0"
+                            }`}
+                            strokeWidth={3.5}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-xs text-slate-700 leading-relaxed">
+                        Entendo que vou ter{" "}
+                        <strong className="text-slate-900">7 dias grátis</strong>{" "}
+                        e, depois disso, será cobrado{" "}
+                        <strong className="text-slate-900">
+                          R$ {plan.price.toFixed(2).replace(".", ",")}/mês
+                        </strong>{" "}
+                        no meu cartão. Posso cancelar quando quiser, sem multa.
+                      </span>
+                    </label>
+
                     <button
                       type="submit"
-                      disabled={loading || !isFormValid}
+                      disabled={loading || !isFormValid || !acceptedTrial}
                       className="btn-primary w-full mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? (
@@ -429,7 +471,7 @@ function CheckoutContent() {
                       )}
                     </button>
 
-                    <p className="text-xs text-slate-500 text-center pt-2">
+                    <p className="text-xs text-slate-500 text-center pt-1">
                       Ao continuar, você concorda com nossos{" "}
                       <Link href="/termos" className="underline">
                         Termos
@@ -458,11 +500,11 @@ function CheckoutContent() {
                       <CreditCard size={14} /> Pagamento
                     </div>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                      Como você quer pagar?
+                      Finalize seu pagamento
                     </h1>
                     <p className="text-slate-500 mt-1 text-sm">
-                      Escolha entre cartão ou PIX. O pagamento é processado na
-                      hora, sem sair dessa página.
+                      Confirma os dados do cartão abaixo. 7 dias grátis —
+                      só começa a cobrar depois.
                     </p>
                     <div className="mt-3 inline-flex items-center gap-2 text-xs text-slate-600 bg-slate-50 rounded-full px-3 py-1.5">
                       <User size={12} />
@@ -470,21 +512,20 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  {/* PaymentForm custom (cartão + PIX direto, sem modal, sem redirect)
-                      trialDays: por padrão é 7 (todos os planos incluem 7 dias grátis).
-                      Pra "pular o trial e pagar agora" passa ?paynow=1 na URL. */}
-                  <PaymentForm
-                    amount={plan.price}
-                    planName={plan.name}
-                    customerName={name}
-                    customerEmail={email}
-                    customerPhone={phone}
-                    customerCpf={cpf}
-                    planId={plan.id}
-                    trialDays={
-                      searchParams.get("paynow") === "1" ? 0 : 7
-                    }
-                  />
+                  {/* Stripe Embedded Checkout (iframe na mesma pagina, sem redirect) */}
+                  {clientSecret ? (
+                    <StripeEmbeddedCheckout clientSecret={clientSecret} />
+                  ) : (
+                    <div className="text-center py-12">
+                      <Loader2
+                        size={32}
+                        className="animate-spin mx-auto text-green-600"
+                      />
+                      <p className="text-slate-500 mt-3 text-sm">
+                        Carregando checkout...
+                      </p>
+                    </div>
+                  )}
 
                   <p className="text-[11px] text-slate-400 text-center mt-5">
                     Ao pagar, você concorda com nossos{" "}
@@ -512,7 +553,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Zap size={14} className="text-green-600" />
-                  Pagamento processado por Mercado Pago
+                  Pagamento processado por Stripe
                 </div>
               </div>
             </div>
