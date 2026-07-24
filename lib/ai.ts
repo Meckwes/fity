@@ -371,7 +371,11 @@ export async function generateBriefing(
     ? `\n🍽️ PREFERENCIAS ALIMENTARES DO USUARIO (USE OBRIGATORIAMENTE):\n` +
       (fpLikes ? `- GOSTA MUITO: ${fpLikes}\n` : "") +
       (fpDislikes ? `- NAO GOSTA / NAO COME: ${fpDislikes}\n` : "") +
-      `==> PRIORIZE alimentos que ele gosta. EVITE alimentos da lista "nao gosta".\n`
+      `==> PRIORIZE alimentos que ele gosta. EVITE alimentos da lista "nao gosta".\n` +
+      `==> INTERPRETE DE FORMA AMPLA: se o usuario disse "nao gosta de gordura de carne", entao EVITE carne com gordura, carne moida comum, picanha, costela, linguiça. Use cortes magros (patinho, alcatra, frango sem pele, peixe).\n` +
+      `==> Se o usuario disse "nao gosta de figado", EVITE figado, mocoto, dobradinha, qualquer miudo.\n` +
+      `==> Se o usuario disse "nao gosta de coxa de frango", use PEITO de frango (nao coxa, nao asa, nao sobrecoxa).\n` +
+      `==> REGRA DE OURO: na duvida, substitua por um equivalente magro ou pela proteina vegetal (ovo, leguminosas).\n`
     : "";
 
   const userMessage = `

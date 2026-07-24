@@ -126,7 +126,11 @@ function formatBriefingAsText(
     );
   }
 
-  const firstName = (customerName || "amigo(a)").split(" ")[0];
+  // firstName: usa o primeiro nome, mas trata placeholder "Usuario sem nome" / "Usuario" como fallback
+  const rawName = (customerName || "").trim();
+  const firstName = (rawName && !/^(usuario|amigo)/i.test(rawName))
+    ? rawName.split(" ")[0]
+    : "amigo(a)";
   const mensagem = b?.mensagem_motivacional || "Bora pra mais um dia!";
 
   // Treino (defensivo — pode nao ter vindo com a estrutura esperada)

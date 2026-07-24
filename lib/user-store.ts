@@ -107,10 +107,11 @@ export async function getOrCreateUserByLid(
     .insert({
       lid,
       // Capitaliza o nome (ex: "pedro silva" -> "Pedro Silva")
-      // Se o nome vier vazio/placeholder, fica "Usuario sem nome" mesmo
+      // Se o nome vier vazio/placeholder, deixa null (o briefing usa "amigo(a)" como fallback)
+      // Evita "Usuario sem nome" no banco, que vaza no briefing e em outros lugares
       name: name && name.trim() && name.trim() !== "."
         ? titleCase(name.trim())
-        : "Usuario sem nome",
+        : null,
       phone: phoneFallback,
       active: true,
       onboarding_completed: false,
