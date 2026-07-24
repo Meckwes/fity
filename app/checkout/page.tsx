@@ -165,6 +165,39 @@ function CheckoutContent() {
     setStep("payment");
   }
 
+  // ===================================================================
+  // STRIPE CHECKOUT: redireciona o user pra o checkout hospedado do Stripe
+  // (substitui o MP direto — Stripe Checkout é mais bonito, mais seguro,
+  //  e ja vem com trial de 7 dias configurado no price)
+  // ===================================================================
+  async function handleStripeCheckout() {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/checkout/stripe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: planId,
+          email,
+          name,
+          // userId seria o id do user no Supabase se ele ja tiver
+          // (quando vem do Zap depois de onboarded). Por enquanto vem vazio.
+          userId: "",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao criar checkout");
+      }
+      // Redireciona pro Stripe Checkout
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao processar");
+      setLoading(false);
+    }
+  }
+
   // Valido/invalido em tempo real (pra travar o botao)
   const isNameValid = name.trim().length >= 3;
   const isEmailValid = isValidEmail(email);
@@ -195,7 +228,7 @@ function CheckoutContent() {
     }
 
     setError(null);
-    goToPayment();
+    handleStripeCheckout();
   }
 
   // Volta pra edicao dos dados
