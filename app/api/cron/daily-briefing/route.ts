@@ -395,6 +395,28 @@ export async function GET(req: Request) {
     `[briefing-orchestrator] finished em ${duration}ms: ${JSON.stringify(stats)}`
   );
 
+  // =================================================================
+  // 4. ALERTA PRO WESLEY SE 100% FALHOU
+  // (sentinela: se processou usuarios mas nenhum foi enviado,
+  // manda msg no Zap pessoal dele pra ele saber investigar)
+  // =================================================================
+  if (stats.processed > 0 && stats.sent_text === 0 && stats.failed > 0) {
+    try {
+      const wmPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+      if (wmPhone) {
+        const alertMsg =
+          `🚨 *Alerta Fity* — briefing falhou pra TODOS os usu\u00e1rios\n\n` +
+          `Processados: ${stats.processed} | Enviados: ${stats.sent_text} | Falhas: ${stats.failed}\n` +
+          `Erros: ${stats.errors.slice(0, 3).join(" | ")}\n\n` +
+          `Investiga ai! Cheque bot zap, env vars, e logs do Vercel.`;
+        await sendTextMessage(wmPhone, alertMsg);
+        console.log(`[briefing-orchestrator] alerta enviado pro Wesley (${wmPhone})`);
+      }
+    } catch (alertErr) {
+      console.error("[briefing-orchestrator] falha ao enviar alerta:", alertErr);
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     ...stats,
