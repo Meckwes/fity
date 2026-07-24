@@ -28,8 +28,12 @@ const PRICE_IDS: Record<string, string | undefined> = {
 export async function POST(req: Request) {
   try {
     const { plan, email, name, userId, cpf, phone } = await req.json();
-    // Limpa o phone pra ficar só numeros (ex: 5585998022352)
-    const phoneClean = (phone || "").replace(/\D/g, "");
+    // Limpa o phone pra ficar só numeros
+    let phoneClean = (phone || "").replace(/\D/g, "");
+    // Se nao comecou com 55, adiciona (assume BR)
+    if (phoneClean && !phoneClean.startsWith("55")) {
+      phoneClean = "55" + phoneClean;
+    }
 
     const priceId = PRICE_IDS[plan];
     if (!priceId) {
