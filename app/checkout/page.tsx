@@ -512,21 +512,6 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  {/* Stripe Embedded Checkout (iframe na mesma pagina, sem redirect) */}
-                  {clientSecret ? (
-                    <StripeEmbeddedCheckout clientSecret={clientSecret} />
-                  ) : (
-                    <div className="text-center py-12">
-                      <Loader2
-                        size={32}
-                        className="animate-spin mx-auto text-green-600"
-                      />
-                      <p className="text-slate-500 mt-3 text-sm">
-                        Carregando checkout...
-                      </p>
-                    </div>
-                  )}
-
                   <p className="text-[11px] text-slate-400 text-center mt-5">
                     Ao pagar, você concorda com nossos{" "}
                     <Link href="/termos" className="underline hover:text-slate-600">
